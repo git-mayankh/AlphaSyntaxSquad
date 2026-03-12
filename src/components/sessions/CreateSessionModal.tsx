@@ -11,9 +11,10 @@ import { toast } from "sonner";
 export interface CreateSessionModalProps {
   isOpen: boolean;
   onClose: () => void;
+  defaultOrgId?: string | null;
 }
 
-export const CreateSessionModal = ({ isOpen, onClose }: CreateSessionModalProps) => {
+export const CreateSessionModal = ({ isOpen, onClose, defaultOrgId }: CreateSessionModalProps) => {
   const router = useRouter();
   const supabase = createSupabaseClient();
   const [loading, setLoading] = useState(false);
@@ -58,6 +59,7 @@ export const CreateSessionModal = ({ isOpen, onClose }: CreateSessionModalProps)
           status: "active",
           invite_code: generateInviteCode(),
           created_by: user.id,
+          organization_id: defaultOrgId || null,
         })
         .select()
         .single();

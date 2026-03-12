@@ -85,6 +85,67 @@ export type Database = {
           },
         ]
       }
+      idea_positions: {
+        Row: {
+          idea_id: string
+          updated_at: string
+          x: number
+          y: number
+        }
+        Insert: {
+          idea_id: string
+          updated_at?: string
+          x?: number
+          y?: number
+        }
+        Update: {
+          idea_id?: string
+          updated_at?: string
+          x?: number
+          y?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "idea_positions_idea_id_fkey"
+            columns: ["idea_id"]
+            isOneToOne: true
+            referencedRelation: "ideas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      idea_reactions: {
+        Row: {
+          created_at: string
+          emoji: string
+          id: string
+          idea_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          id?: string
+          idea_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          idea_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "idea_reactions_idea_id_fkey"
+            columns: ["idea_id"]
+            isOneToOne: false
+            referencedRelation: "ideas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       idea_votes: {
         Row: {
           created_at: string
@@ -121,6 +182,7 @@ export type Database = {
       ideas: {
         Row: {
           author_id: string | null
+          board_section: string | null
           category: string | null
           created_at: string
           description: string | null
@@ -130,11 +192,13 @@ export type Database = {
           is_ai_generated: boolean | null
           market_score: number | null
           session_id: string
+          source: string | null
           status: string | null
           title: string
         }
         Insert: {
           author_id?: string | null
+          board_section?: string | null
           category?: string | null
           created_at?: string
           description?: string | null
@@ -144,11 +208,13 @@ export type Database = {
           is_ai_generated?: boolean | null
           market_score?: number | null
           session_id: string
+          source?: string | null
           status?: string | null
           title: string
         }
         Update: {
           author_id?: string | null
+          board_section?: string | null
           category?: string | null
           created_at?: string
           description?: string | null
@@ -158,6 +224,7 @@ export type Database = {
           is_ai_generated?: boolean | null
           market_score?: number | null
           session_id?: string
+          source?: string | null
           status?: string | null
           title?: string
         }
@@ -174,6 +241,113 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          author_id: string
+          content: string
+          created_at: string
+          id: string
+          session_id: string
+        }
+        Insert: {
+          author_id: string
+          content: string
+          created_at?: string
+          id?: string
+          session_id: string
+        }
+        Update: {
+          author_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_members: {
+        Row: {
+          joined_at: string
+          org_id: string
+          role: string | null
+          user_id: string
+        }
+        Insert: {
+          joined_at?: string
+          org_id: string
+          role?: string | null
+          user_id: string
+        }
+        Update: {
+          joined_at?: string
+          org_id?: string
+          role?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_members_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          share_code: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          share_code: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          share_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organizations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -207,6 +381,7 @@ export type Database = {
           description: string | null
           id: string
           invite_code: string
+          organization_id: string | null
           problem_statement: string | null
           status: string | null
           tags: string[] | null
@@ -220,6 +395,7 @@ export type Database = {
           description?: string | null
           id?: string
           invite_code: string
+          organization_id?: string | null
           problem_statement?: string | null
           status?: string | null
           tags?: string[] | null
@@ -233,6 +409,7 @@ export type Database = {
           description?: string | null
           id?: string
           invite_code?: string
+          organization_id?: string | null
           problem_statement?: string | null
           status?: string | null
           tags?: string[] | null
@@ -243,6 +420,55 @@ export type Database = {
           {
             foreignKeyName: "sessions_created_by_fkey"
             columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sessions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voice_transcripts: {
+        Row: {
+          content: string
+          created_at: string
+          detected_idea: string | null
+          id: string
+          session_id: string
+          speaker_id: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          detected_idea?: string | null
+          id?: string
+          session_id: string
+          speaker_id?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          detected_idea?: string | null
+          id?: string
+          session_id?: string
+          speaker_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_transcripts_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voice_transcripts_speaker_id_fkey"
+            columns: ["speaker_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
