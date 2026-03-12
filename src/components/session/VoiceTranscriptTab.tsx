@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Mic, MicOff, Phone, PhoneOff, Volume2, Brain, Lightbulb, Loader2, Plus, AlertCircle } from "lucide-react";
+import { LiveKitRoom, RoomAudioRenderer } from "@livekit/components-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { createSupabaseClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
@@ -14,6 +15,7 @@ interface VoiceTranscriptTabProps {
 export const VoiceTranscriptTab = ({ sessionId }: VoiceTranscriptTabProps) => {
   const supabase = createSupabaseClient();
   const [isConnected, setIsConnected] = useState(false);
+  const [lkToken, setLkToken] = useState("");
   const [isMuted, setIsMuted] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [interimTranscript, setInterimTranscript] = useState("");
@@ -68,12 +70,43 @@ export const VoiceTranscriptTab = ({ sessionId }: VoiceTranscriptTabProps) => {
           detected_idea: idea,
         });
 
+        const ideaId = Math.random().toString(36).substring(7);
+
         // Add to local state for manual review
         setDetectedIdeas(prev => [
-          { id: Math.random().toString(36).substring(7), text: idea, saved: false },
+          { id: ideaId, text: idea, saved: false },
           ...prev.slice(0, 9)
         ]);
-        toast.info("💡 New idea detected from conversation!");
+
+        // Interactive Popup
+        toast.custom((t) => (
+          <div className="bg-bg-elevated border border-indigo-500/30 rounded-xl p-4 shadow-xl flex flex-col gap-3 w-[320px]">
+            <div className="flex items-center gap-2">
+              <div className="bg-indigo-500/20 p-1.5 rounded-md">
+                <Brain className="w-4 h-4 text-indigo-400" />
+              </div>
+              <span className="text-sm font-bold text-text-primary">AI Detected Idea</span>
+            </div>
+            <p className="text-sm text-text-secondary leading-snug">{idea}</p>
+            <div className="flex gap-2 mt-1">
+              <button 
+                onClick={() => {
+                  toast.dismiss(t);
+                  handleAddIdeaToBoard(ideaId, idea);
+                }}
+                className="flex-1 py-1.5 bg-indigo-500 text-white text-xs font-semibold rounded-lg hover:bg-indigo-600 transition-colors"
+              >
+                Add to board
+              </button>
+              <button 
+                onClick={() => toast.dismiss(t)}
+                className="flex-1 py-1.5 bg-bg-surface text-text-secondary text-xs font-semibold rounded-lg hover:bg-bg-base transition-colors"
+              >
+                Ignore
+              </button>
+            </div>
+          </div>
+        ), { duration: 15000 });
       }
     } catch (e) {
       console.error("Transcription error:", e);
@@ -81,7 +114,7 @@ export const VoiceTranscriptTab = ({ sessionId }: VoiceTranscriptTabProps) => {
       setIsAnalyzing(false);
       accumulatedRef.current = "";
     }
-  }, [currentUser, sessionId, supabase]);
+  }, [currentUser, sessionId, supabase]); // handleAddIdeaToBoard will be correctly scoped or we can pass it down
 
   const startListening = useCallback(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -135,6 +168,17 @@ export const VoiceTranscriptTab = ({ sessionId }: VoiceTranscriptTabProps) => {
   const joinRoom = async () => {
     if (!currentUser) return;
     setIsConnected(true);
+    
+    try {
+      const res = await fetch(`/api/livekit/token?room=${sessionId}&username=${encodeURIComponent(currentUser.name)}`);
+      const data = await res.json();
+      if (data.token) {
+        setLkToken(data.token);
+      }
+    } catch (err) {
+      console.error("Livekit token err", err);
+    }
+
     startListening();
     toast.success("Joined voice room!");
   };
@@ -144,6 +188,7 @@ export const VoiceTranscriptTab = ({ sessionId }: VoiceTranscriptTabProps) => {
     recognitionRef.current = null;
     if (analyzeTimerRef.current) clearTimeout(analyzeTimerRef.current);
     setIsConnected(false);
+    setLkToken("");
     setTranscript("");
     setInterimTranscript("");
     toast.info("Left voice room");
@@ -171,7 +216,8 @@ export const VoiceTranscriptTab = ({ sessionId }: VoiceTranscriptTabProps) => {
       description: "Captured from voice discussion",
       category: "Other",
       author_id: currentUser.id,
-      is_ai_generated: true, // This flag will render the Voice/AI badge
+      is_ai_generated: true,
+      source: "voice", // Render the Voice Gen Badge
     }).select().single();
 
     if (error || !newIdea) {
@@ -337,6 +383,19 @@ export const VoiceTranscriptTab = ({ sessionId }: VoiceTranscriptTabProps) => {
           )}
         </div>
       </div>
+
+      {/* LiveKit Hidden Audio Engine */}
+      {lkToken && process.env.NEXT_PUBLIC_LIVEKIT_URL && (
+        <LiveKitRoom
+          video={false}
+          audio={!isMuted}
+          token={lkToken}
+          serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL}
+          connect={true}
+        >
+          <RoomAudioRenderer />
+        </LiveKitRoom>
+      )}
     </div>
   );
 };

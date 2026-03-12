@@ -146,8 +146,9 @@ export default function SessionBoardPage({ params }: { params: Promise<{ id: str
       : { name: "Unknown" },
     timeAgo: new Date(idea.created_at).toLocaleDateString(),
     votes: idea.votes_count ?? 0,
-    comments: 0,
-    reactions: 0,
+    comments: idea.comments_count ?? 0,
+    reactions: idea.reactions_count ?? 0,
+    userReaction: idea.user_reaction_emoji,
     isAiGenerated: idea.is_ai_generated || false,
     scores: { feasibility: idea.feasibility_score, market: idea.market_score, innovation: idea.innovation_score },
     onComment: () => handleCommentOpen(idea.id, idea.title),
@@ -155,7 +156,7 @@ export default function SessionBoardPage({ params }: { params: Promise<{ id: str
     onTimeline: () => handleTimelineOpen(idea.id, idea.title),
     onExport: () => window.open(`/session/${id}/export/${idea.id}`, "_blank"),
     // Canvas position
-    position: { x: 100 + (i % 3) * 380, y: 60 + Math.floor(i / 3) * 300 },
+    position: idea.position || { x: 100 + (i % 3) * 380, y: 60 + Math.floor(i / 3) * 300 },
   }));
 
   const analyticsIdeas = ideas.map((i: any) => ({
@@ -347,7 +348,7 @@ export default function SessionBoardPage({ params }: { params: Promise<{ id: str
                   )}
                   {rightPanel === "analytics" && (
                     <motion.div key="analytics" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full">
-                      <AIAnalyticsPanel ideas={analyticsIdeas} onMergeIdeas={handleMergeIdeas} />
+                      <AIAnalyticsPanel ideas={analyticsIdeas} sessionTitle={session?.title || "Brainstorming Session"} onMergeIdeas={handleMergeIdeas} />
                     </motion.div>
                   )}
                   {rightPanel === "transcript" && (

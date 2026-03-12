@@ -22,7 +22,9 @@ export interface IdeaCardProps {
   votes: number;
   comments: number;
   reactions: number;
+  userReaction?: string | null;
   isAiGenerated?: boolean;
+  source?: "user" | "ai" | "voice";
   scores?: { feasibility: number | null; market: number | null; innovation: number | null };
   hasVoted?: boolean;
   onVote?: () => void;
@@ -34,7 +36,7 @@ export interface IdeaCardProps {
 
 export const IdeaCard = ({
   id, category, status, title, description, tags, author, timeAgo, 
-  votes, comments, reactions, isAiGenerated, scores, hasVoted: initialVoted = false,
+  votes, comments, reactions, userReaction, isAiGenerated, source = "user", scores, hasVoted: initialVoted = false,
   onComment, onEvaluate, onTimeline, onExport
 }: IdeaCardProps) => {
 
@@ -80,6 +82,47 @@ export const IdeaCard = ({
       setHasVoted(false);
       setVoteCount(c => c - 1);
       await supabase.from("idea_votes").delete().match({ idea_id: id, user_id: userData.user.id });
+    }
+  };
+
+  const handleReact = async (e: React.MouseEvent, emoji: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Cache the rect synchronously because e.currentTarget becomes null after await
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = (rect.left + rect.width / 2) / window.innerWidth;
+    const y = (rect.top + rect.height / 2) / window.innerHeight;
+    
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData?.user) {
+      toast.error("Sign in to react.");
+      return;
+    }
+
+    const { error } = await supabase.from("idea_reactions").insert({
+      idea_id: id,
+      user_id: userData.user.id,
+      emoji
+    });
+    
+    // If error (unique constraint violation), user already reacted -> delete it (toggle)
+    if (error) {
+      await supabase.from("idea_reactions").delete().match({
+        idea_id: id,
+        user_id: userData.user.id,
+        emoji
+      });
+    } else {
+      // Small particle effect for reaction
+      confetti({
+        particleCount: 5,
+        spread: 40,
+        startVelocity: 10,
+        colors: ['#F472B6', '#FBBF24'],
+        ticks: 20,
+        origin: { x, y }
+      });
     }
   };
 
@@ -162,12 +205,26 @@ export const IdeaCard = ({
 
       {/* AI BADGE OVERLAY & SCORE OVERLAY */}
       <div className="mx-5 mb-1 flex items-center gap-2">
-        {isAiGenerated && (
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[11px] font-medium rounded-full">
-            <Sparkles className="w-3 h-3 animate-pulse" />
-            AI Generated
-          </div>
-        )}
+            {source === "voice" && (
+              <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-indigo-500/10 text-indigo-400 text-[10px] font-bold tracking-wide uppercase border border-indigo-500/20 backdrop-blur-sm self-start">
+                <Sparkles className="w-3 h-3" />
+                Voice Gen
+              </div>
+            )}
+            
+            {source === "ai" && (
+              <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-purple-500/10 text-purple-400 text-[10px] font-bold tracking-wide uppercase border border-purple-500/20 backdrop-blur-sm self-start">
+                <Sparkles className="w-3 h-3" />
+                AI Generated
+              </div>
+            )}
+
+            {(isAiGenerated && source !== "ai" && source !== "voice") && (
+              <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-indigo-500/10 text-indigo-400 text-[10px] font-bold tracking-wide uppercase border border-indigo-500/20 backdrop-blur-sm self-start">
+                <Sparkles className="w-3 h-3" />
+                AI Assist
+              </div>
+            )}
         {hasScores && (
           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-500/10 border border-green-500/20 text-green-400 text-[11px] font-medium rounded-full" title={`Feas: ${scores.feasibility}, Mkt: ${scores.market}, Inn: ${scores.innovation}`}>
             ★ {avgScore}/10 Score
@@ -190,16 +247,44 @@ export const IdeaCard = ({
         <div className="flex items-center gap-1.5">
           <button 
             className="flex items-center gap-1 text-text-tertiary hover:text-indigo-400 transition-colors p-1"
-            onClick={onComment}
+            onClick={(e) => {
+              e.stopPropagation();
+              onComment?.();
+            }}
           >
             <MessageCircle className="w-4 h-4" />
             <span className="text-[13px] font-medium">{comments}</span>
           </button>
           
-          <button className="flex items-center gap-1 text-text-tertiary hover:text-pink-400 transition-colors p-1 group/react">
-            <Smile className="w-4 h-4" />
-            {reactions > 0 && <span className="text-[13px] font-medium">{reactions}</span>}
-          </button>
+          <div className="relative flex items-center group/reaction">
+            <button className={cn(
+              "flex items-center gap-1 transition-colors p-1 relative z-10",
+              userReaction ? "text-pink-500" : "text-text-tertiary hover:text-pink-400"
+            )}>
+              {userReaction ? (
+                <span className="text-base leading-none -mt-0.5">{userReaction}</span>
+              ) : (
+                <Smile className="w-4 h-4" />
+              )}
+              {reactions > 0 && <span className="text-[13px] font-medium">{reactions}</span>}
+            </button>
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 pb-2 opacity-0 pointer-events-none group-hover/reaction:opacity-100 group-hover/reaction:pointer-events-auto transition-all translate-y-2 group-hover/reaction:translate-y-0 z-50">
+              <div className="bg-bg-elevated border border-border-default rounded-full shadow-lg p-1.5 flex items-center gap-1">
+                {['👍', '❤️', '🔥', '🚀'].map(emoji => (
+                  <button 
+                    key={emoji}
+                    onClick={(e) => handleReact(e, emoji)}
+                    className={cn(
+                      "w-7 h-7 flex items-center justify-center rounded-full transition-transform text-base",
+                      userReaction === emoji ? "bg-bg-hover scale-110" : "hover:bg-bg-hover hover:scale-125"
+                    )}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
 
           <motion.button
             whileTap={{ scale: 1.05 }}
