@@ -41,7 +41,7 @@ export default function SessionBoardPage({ params }: { params: Promise<{ id: str
   const [rightPanel, setRightPanel] = useState<RightPanelTab>("chat");
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
   const [activeCommentIdea, setActiveCommentIdea] = useState<{ id: string; title: string } | null>(null);
-  const [activeEvaluateIdea, setActiveEvaluateIdea] = useState<{ id: string; title: string; scores: any } | null>(null);
+  const [activeEvaluateIdea, setActiveEvaluateIdea] = useState<{ id: string; title: string; description?: string; scores: any } | null>(null);
   const [activeTimelineIdea, setActiveTimelineIdea] = useState<{ id: string; title: string } | null>(null);
 
   // Search & Filter State
@@ -72,7 +72,7 @@ export default function SessionBoardPage({ params }: { params: Promise<{ id: str
   const handleCommentOpen = (ideaId: string, title: string) => setActiveCommentIdea({ id: ideaId, title });
   const handleTimelineOpen = (ideaId: string, title: string) => setActiveTimelineIdea({ id: ideaId, title });
   const handleEvaluateOpen = (idea: any) => setActiveEvaluateIdea({
-    id: idea.id, title: idea.title,
+    id: idea.id, title: idea.title, description: idea.description,
     scores: { feasibility: idea.feasibility_score, market: idea.market_score, innovation: idea.innovation_score }
   });
 
@@ -391,6 +391,7 @@ export default function SessionBoardPage({ params }: { params: Promise<{ id: str
         isOpen={!!activeEvaluateIdea}
         ideaId={activeEvaluateIdea?.id || ""}
         ideaTitle={activeEvaluateIdea?.title || ""}
+        ideaDescription={activeEvaluateIdea?.description || ""}
         currentScores={activeEvaluateIdea?.scores}
         onClose={() => setActiveEvaluateIdea(null)}
       />

@@ -89,6 +89,57 @@ export const CommentDrawer = ({ isOpen, onClose, ideaId, ideaTitle }: CommentDra
     }
   };
 
+  const handleAskAI = async () => {
+    if (!inputValue.trim() || !ideaId) return;
+    setIsSubmitting(true);
+    try {
+      // First, post the user's question as a normal comment
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData?.user) {
+        toast.error("Please sign in to ask AI.");
+        setIsSubmitting(false);
+        return;
+      }
+      
+      const { error: insertError } = await supabase.from("idea_comments").insert({
+        idea_id: ideaId,
+        author_id: userData.user.id,
+        text: inputValue.trim()
+      });
+      if (insertError) throw insertError;
+      
+      const promptText = inputValue.trim();
+      setInputValue("");
+      
+      // Notify user AI is thinking
+      toast.loading("AI is thinking...", { id: "ai-typing" });
+
+      // Then ask the AI to answer based on the thread
+      const res = await fetch("/api/ai/idea-chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ideaId,
+          title: ideaTitle,
+          description: "See idea description on board.",
+          currentComments: comments,
+          prompt: promptText
+        }),
+      });
+      
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      
+      toast.success("AI responded!", { id: "ai-typing" });
+      queryClient.invalidateQueries({ queryKey: ["comments", ideaId] });
+      queryClient.invalidateQueries({ queryKey: ["ideas"] });
+    } catch (err: any) {
+      toast.error(err.message || "AI failed to respond", { id: "ai-typing" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -172,18 +223,34 @@ export const CommentDrawer = ({ isOpen, onClose, ideaId, ideaTitle }: CommentDra
                     }}
                     className="w-full bg-bg-elevated border border-border-default rounded-[20px] py-2.5 pl-4 pr-12 text-[14px] text-text-primary placeholder:text-text-disabled outline-none focus:border-indigo-500/50 resize-none min-h-[44px] max-h-[120px] transition-colors overflow-hidden flex items-center"
                   />
-                  <button 
-                    onClick={handleSubmit}
-                    className={cn(
-                      "absolute right-1.5 top-1.5 w-8 h-8 rounded-full flex items-center justify-center transition-all",
-                      inputValue.trim() && !isSubmitting
-                        ? "bg-indigo-500 text-white shadow-glow-indigo hover:bg-indigo-600 hover:scale-105" 
-                        : "bg-bg-elevated text-text-tertiary cursor-not-allowed opacity-50"
-                    )}
-                    disabled={!inputValue.trim() || isSubmitting}
-                  >
-                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 ml-[-1px]" />}
-                  </button>
+                  <div className="absolute right-1.5 top-1.5 flex gap-1 items-center">
+                    <button 
+                      onClick={handleAskAI}
+                      className={cn(
+                        "w-8 h-8 rounded-full flex items-center justify-center transition-all",
+                        inputValue.trim() && !isSubmitting
+                          ? "bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 hover:scale-105" 
+                          : "bg-transparent text-text-tertiary cursor-not-allowed opacity-50"
+                      )}
+                      disabled={!inputValue.trim() || isSubmitting}
+                      title="Ask AI about this idea"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                    </button>
+                    <button 
+                      onClick={handleSubmit}
+                      className={cn(
+                        "w-8 h-8 rounded-full flex items-center justify-center transition-all",
+                        inputValue.trim() && !isSubmitting
+                          ? "bg-indigo-500 text-white shadow-glow-indigo hover:bg-indigo-600 hover:scale-105" 
+                          : "bg-bg-elevated text-text-tertiary cursor-not-allowed opacity-50"
+                      )}
+                      disabled={!inputValue.trim() || isSubmitting}
+                      title="Send comment"
+                    >
+                      {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 ml-[-1px]" />}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
