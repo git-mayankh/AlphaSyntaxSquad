@@ -255,16 +255,13 @@ export const CreateIdeaModal = ({ isOpen, onClose, sessionId }: CreateIdeaModalP
               <div className="w-full max-w-[400px]">
                 <IdeaCard
                   id="preview"
-                  category={{ id: category.id, name: category.label, color: category.color }}
-                  status="open"
+                  category={{ id: category.id, name: category.label }}
                   title={title}
                   description={editor?.getText() || ""}
-                  tags={tags.length > 0 ? tags : ["Draft"]}
                   author={{ name: "Sarah Jenkins" }}
                   timeAgo="Just now"
                   votes={1}
                   comments={0}
-                  reactions={0}
                   hasVoted={true}
                 />
               </div>
