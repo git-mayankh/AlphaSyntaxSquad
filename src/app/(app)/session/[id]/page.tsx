@@ -155,7 +155,7 @@ export default function SessionBoardPage({ params }: { params: Promise<{ id: str
     onTimeline: () => handleTimelineOpen(idea.id, idea.title),
     onExport: () => window.open(`/session/${id}/export/${idea.id}`, "_blank"),
     // Canvas position
-    position: { x: 100 + (i % 3) * 380, y: 60 + Math.floor(i / 3) * 300 },
+    position: idea.position || { x: 100 + (i % 3) * 380, y: 60 + Math.floor(i / 3) * 300 },
   }));
 
   const analyticsIdeas = ideas.map((i: any) => ({
@@ -347,7 +347,7 @@ export default function SessionBoardPage({ params }: { params: Promise<{ id: str
                   )}
                   {rightPanel === "analytics" && (
                     <motion.div key="analytics" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full">
-                      <AIAnalyticsPanel ideas={analyticsIdeas} onMergeIdeas={handleMergeIdeas} />
+                      <AIAnalyticsPanel ideas={analyticsIdeas} sessionTitle={session?.title || "Brainstorming Session"} onMergeIdeas={handleMergeIdeas} />
                     </motion.div>
                   )}
                   {rightPanel === "transcript" && (

@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Brain, Lightbulb, TrendingUp, Layers, Loader2, Sparkles, Trophy, Merge, CopyPlus, Trash2 } from "lucide-react";
+import { Brain, Lightbulb, TrendingUp, Layers, Loader2, Sparkles, Trophy, Merge, CopyPlus, Trash2, FileText, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface Idea {
@@ -27,12 +27,13 @@ interface AnalyticsResult {
 
 interface AIAnalyticsPanelProps {
   ideas: Idea[];
+  sessionTitle?: string;
   onMergeIdeas?: (idea1: Idea, idea2: Idea) => Promise<void>;
 }
 
-type Tab = "analytics" | "merge" | "duplicates";
+type Tab = "analytics" | "merge" | "duplicates" | "summary";
 
-export const AIAnalyticsPanel = ({ ideas, onMergeIdeas }: AIAnalyticsPanelProps) => {
+export const AIAnalyticsPanel = ({ ideas, sessionTitle = "Brainstorming Session", onMergeIdeas }: AIAnalyticsPanelProps) => {
   const [tab, setTab] = useState<Tab>("analytics");
   const [loading, setLoading] = useState(false);
   const [analytics, setAnalytics] = useState<AnalyticsResult | null>(null);
@@ -41,6 +42,30 @@ export const AIAnalyticsPanel = ({ ideas, onMergeIdeas }: AIAnalyticsPanelProps)
   const [merging, setMerging] = useState(false);
   const [findingDuplicates, setFindingDuplicates] = useState(false);
   const [duplicates, setDuplicates] = useState<{idea1Id: string, idea2Id: string, reason: string, confidenceScore: number}[] | null>(null);
+  const [sessionSummary, setSessionSummary] = useState<any>(null);
+  const [generatingSummary, setGeneratingSummary] = useState(false);
+
+  const generateSummary = async () => {
+    if (ideas.length === 0) {
+      toast.error("Add some ideas first to generate a summary.");
+      return;
+    }
+    setGeneratingSummary(true);
+    try {
+      const res = await fetch("/api/ai/session-summary", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionTitle, ideas }),
+      });
+      const result = await res.json();
+      setSessionSummary(result);
+      toast.success("Session summary generated!");
+    } catch {
+      toast.error("Failed to generate summary.");
+    } finally {
+      setGeneratingSummary(false);
+    }
+  };
 
   const runDuplicateSearch = async () => {
     if (ideas.length < 2) {
@@ -125,6 +150,9 @@ export const AIAnalyticsPanel = ({ ideas, onMergeIdeas }: AIAnalyticsPanelProps)
           </button>
           <button onClick={() => setTab("duplicates")} className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all ${tab === "duplicates" ? "bg-indigo-500/20 text-indigo-300" : "text-text-secondary hover:text-text-primary"}`}>
             <CopyPlus className="w-3 h-3 inline mr-1" />Dupes
+          </button>
+          <button onClick={() => setTab("summary")} className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all ${tab === "summary" ? "bg-indigo-500/20 text-indigo-300" : "text-text-secondary hover:text-text-primary"}`}>
+            <FileText className="w-3 h-3 inline mr-1" />Summary
           </button>
         </div>
       </div>
@@ -300,6 +328,74 @@ export const AIAnalyticsPanel = ({ ideas, onMergeIdeas }: AIAnalyticsPanelProps)
                 <div className="text-center py-8 text-text-disabled">
                   <Sparkles className="w-10 h-10 mx-auto mb-2 opacity-20 text-green-400" />
                   <p className="text-xs text-green-400/70">No duplicates found! Your board is clean.</p>
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {tab === "summary" && (
+            <motion.div key="summary" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-4">
+              {!sessionSummary ? (
+                <div className="text-center py-6 border border-dashed border-border-default rounded-xl bg-bg-base/50">
+                  <FileText className="w-8 h-8 text-indigo-400/50 mx-auto mb-3" />
+                  <p className="text-xs text-text-secondary mb-4 px-4 leading-relaxed">
+                    Generate an executive summary of the entire session including key themes, top ideas, and a final concept recommendation.
+                  </p>
+                  <button
+                    onClick={generateSummary}
+                    disabled={generatingSummary || ideas.length === 0}
+                    className="py-2 px-4 rounded-lg bg-indigo-500 text-white text-xs font-semibold hover:bg-indigo-600 transition-colors disabled:opacity-50 flex items-center gap-2 mx-auto shadow-glow-indigo"
+                  >
+                    {generatingSummary ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />Analyzing Board...</> : <><Sparkles className="w-3.5 h-3.5" />Generate Summary</>}
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-bold text-text-primary flex items-center gap-2">
+                      <Trophy className="w-4 h-4 text-amber-400" /> Session Report
+                    </h3>
+                    <button onClick={generateSummary} disabled={generatingSummary} className="text-[10px] text-indigo-400 hover:text-indigo-300 font-medium disabled:opacity-50">
+                      Regenerate
+                    </button>
+                  </div>
+
+                  <div className="bg-bg-elevated border border-border-strong rounded-xl p-3 shadow-inner">
+                    <h4 className="text-[10px] uppercase font-bold text-text-tertiary tracking-wider mb-2 flex flex-center gap-1.5"><Layers className="w-3 h-3"/> Overview</h4>
+                    <p className="text-xs text-text-secondary leading-relaxed">{sessionSummary.overview}</p>
+                  </div>
+
+                  <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-3">
+                    <h4 className="text-[10px] uppercase font-bold text-amber-500/80 tracking-wider mb-2 flex items-center gap-1.5"><Lightbulb className="w-3 h-3"/> Standout Ideas</h4>
+                    <ul className="flex flex-col gap-2">
+                      {sessionSummary.topIdeas.map((idea: string, i: number) => (
+                        <li key={i} className="text-xs text-amber-200/90 leading-snug flex items-start gap-1.5">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                          <span>{idea}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    {sessionSummary.keyThemes.map((theme: string, i: number) => (
+                      <div key={i} className="bg-indigo-500/10 border border-indigo-500/20 p-2 rounded-lg text-center">
+                        <span className="text-[10px] font-bold text-indigo-300">{theme}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 rounded-xl p-3 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-4 opacity-10 blur-sm pointer-events-none">
+                      <Sparkles className="w-24 h-24 text-indigo-300" />
+                    </div>
+                    <h4 className="text-[10px] uppercase font-bold text-indigo-300 tracking-wider mb-2 relative z-10 flex items-center gap-1.5">
+                      <Brain className="w-3 h-3" /> Suggested Final Concept
+                    </h4>
+                    <p className="text-xs text-text-primary font-medium leading-relaxed relative z-10">
+                      {sessionSummary.suggestedFinalConcept}
+                    </p>
+                  </div>
                 </div>
               )}
             </motion.div>

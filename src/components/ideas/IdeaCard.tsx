@@ -23,6 +23,7 @@ export interface IdeaCardProps {
   comments: number;
   reactions: number;
   isAiGenerated?: boolean;
+  source?: "user" | "ai" | "voice";
   scores?: { feasibility: number | null; market: number | null; innovation: number | null };
   hasVoted?: boolean;
   onVote?: () => void;
@@ -34,7 +35,7 @@ export interface IdeaCardProps {
 
 export const IdeaCard = ({
   id, category, status, title, description, tags, author, timeAgo, 
-  votes, comments, reactions, isAiGenerated, scores, hasVoted: initialVoted = false,
+  votes, comments, reactions, isAiGenerated, source = "user", scores, hasVoted: initialVoted = false,
   onComment, onEvaluate, onTimeline, onExport
 }: IdeaCardProps) => {
 
@@ -162,12 +163,26 @@ export const IdeaCard = ({
 
       {/* AI BADGE OVERLAY & SCORE OVERLAY */}
       <div className="mx-5 mb-1 flex items-center gap-2">
-        {isAiGenerated && (
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[11px] font-medium rounded-full">
-            <Sparkles className="w-3 h-3 animate-pulse" />
-            AI Generated
-          </div>
-        )}
+            {source === "voice" && (
+              <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-indigo-500/10 text-indigo-400 text-[10px] font-bold tracking-wide uppercase border border-indigo-500/20 backdrop-blur-sm self-start">
+                <Sparkles className="w-3 h-3" />
+                Voice Gen
+              </div>
+            )}
+            
+            {source === "ai" && (
+              <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-purple-500/10 text-purple-400 text-[10px] font-bold tracking-wide uppercase border border-purple-500/20 backdrop-blur-sm self-start">
+                <Sparkles className="w-3 h-3" />
+                AI Generated
+              </div>
+            )}
+
+            {(isAiGenerated && source !== "ai" && source !== "voice") && (
+              <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-indigo-500/10 text-indigo-400 text-[10px] font-bold tracking-wide uppercase border border-indigo-500/20 backdrop-blur-sm self-start">
+                <Sparkles className="w-3 h-3" />
+                AI Assist
+              </div>
+            )}
         {hasScores && (
           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-500/10 border border-green-500/20 text-green-400 text-[11px] font-medium rounded-full" title={`Feas: ${scores.feasibility}, Mkt: ${scores.market}, Inn: ${scores.innovation}`}>
             ★ {avgScore}/10 Score
