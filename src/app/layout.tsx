@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
-import { Syne, DM_Sans, Caveat } from "next/font/google";
+import { DM_Sans, Caveat, Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
 import { ReactQueryProvider } from "@/components/providers/ReactQueryProvider";
 
-const syne = Syne({
-  variable: "--font-syne",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
   display: "swap",
+  weight: ["400", "500", "600", "700", "800"],
 });
 
 const dmSans = DM_Sans({
@@ -24,22 +25,38 @@ const caveat = Caveat({
 });
 
 export const metadata: Metadata = {
-  title: "IdeaForge | Collaborate brilliantly",
-  description: "The premier real-time brainstorming platform.",
+  title: "IdeaForge — Collaborative AI Brainstorming",
+  description: "The creative studio for teams to brainstorm, ideate, and build together.",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${syne.variable} ${dmSans.variable} ${caveat.variable}`}>
-      <body className="antialiased" style={{ backgroundColor: "var(--canvas-bg)", color: "var(--text-primary)", fontFamily: "var(--font-dm-sans, DM Sans, sans-serif)" }}>
+    <html lang="en" className={`${inter.variable} ${dmSans.variable} ${caveat.variable}`}>
+      <body
+        className="antialiased"
+        style={{
+          fontFamily: "var(--font-inter, Inter, -apple-system, sans-serif)",
+          background: "var(--bg)",
+          color: "var(--text-1)",
+        }}
+      >
         <ReactQueryProvider>
           {children}
         </ReactQueryProvider>
-        <Toaster position="bottom-right" theme="light" richColors />
+        <Toaster
+          position="bottom-right"
+          theme="light"
+          richColors
+          toastOptions={{
+            style: {
+              fontFamily: "Inter, sans-serif",
+              fontSize: 13,
+              borderRadius: 10,
+              border: "1px solid var(--border)",
+              boxShadow: "var(--shadow-md)",
+            }
+          }}
+        />
       </body>
     </html>
   );
