@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 
@@ -21,7 +22,11 @@ export const Modal = ({
   closeOnOutsideClick = true,
   maxWidth = "md",
 }: ModalProps) => {
-  
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -44,24 +49,42 @@ export const Modal = ({
     full: "max-w-[90vw] h-[90vh]",
   };
 
-  return (
+  if (!mounted) return null;
+
+  const modalContent = (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <>
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-black/75 backdrop-blur-[6px]"
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              width: "100vw",
+              height: "100vh",
+              background: "rgba(0,0,0,0.4)",
+              zIndex: 1000,
+            }}
             onClick={closeOnOutsideClick ? onClose : undefined}
           />
           
           <motion.div
-            initial={{ opacity: 0, scale: 0.93 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.93 }}
+            initial={{ opacity: 0, scale: 0.93, x: "-50%", y: "-50%" }}
+            animate={{ opacity: 1, scale: 1, x: "-50%", y: "-50%" }}
+            exit={{ opacity: 0, scale: 0.93, x: "-50%", y: "-50%" }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className={`relative w-full ${maxWs[maxWidth]} bg-bg-elevated/90 backdrop-blur-2xl border border-border-default rounded-2xl shadow-[var(--shadow-modal)] flex flex-col overflow-hidden`}
+            style={{
+              position: "fixed",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              zIndex: 1001,
+              width: "90%",
+            }}
+            className={`relative ${maxWs[maxWidth]} bg-bg-elevated/90 backdrop-blur-2xl border border-border-default rounded-2xl shadow-[var(--shadow-modal)] flex flex-col overflow-hidden`}
           >
             {title && (
               <div className="flex items-center justify-between p-6 pb-4 border-b border-border-subtle shrink-0">
@@ -80,8 +103,10 @@ export const Modal = ({
               {children}
             </div>
           </motion.div>
-        </div>
+        </>
       )}
     </AnimatePresence>
   );
+
+  return createPortal(modalContent, document.body);
 };
