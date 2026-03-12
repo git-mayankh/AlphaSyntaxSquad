@@ -6,6 +6,9 @@ import { Database } from "@/lib/supabase/types";
 export type IdeaRow = Database["public"]["Tables"]["ideas"]["Row"] & {
   author: { name: string | null; avatar_url: string | null } | null;
   votes_count: number;
+  comments_count: number;
+  reactions_count: number;
+  user_reaction_emoji?: string | null;
   position?: { x: number; y: number } | null;
 };
 
@@ -16,12 +19,18 @@ export function useIdeas(sessionId: string) {
   const query = useQuery({
     queryKey: ["ideas", sessionId],
     queryFn: async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData?.user?.id;
+
       const { data, error } = await supabase
         .from("ideas")
         .select(`
           *,
           author:profiles!ideas_author_id_fkey(name, avatar_url),
           votes:idea_votes(count),
+          comments:idea_comments(count),
+          reactions:idea_reactions(count),
+          user_reaction:idea_reactions(emoji),
           positions:idea_positions(x, y)
         `)
         .eq("session_id", sessionId);
@@ -29,12 +38,22 @@ export function useIdeas(sessionId: string) {
       if (error) throw error;
       
       // format votes count, positions, and author correctly from join
-      return data.map((idea: any) => ({
-        ...idea,
-        votes_count: idea.votes?.[0]?.count || 0,
-        author: Array.isArray(idea.author) ? idea.author[0] : idea.author,
-        position: Array.isArray(idea.positions) ? idea.positions[0] : idea.positions
-      })) as IdeaRow[];
+      return data.map((idea: any) => {
+        // Find if current user reacted
+        const userReaction = userId && idea.user_reaction 
+          ? idea.user_reaction.find((r: any) => r.user_id === userId)?.emoji || null 
+          : null;
+
+        return {
+          ...idea,
+          votes_count: idea.votes?.[0]?.count || 0,
+          comments_count: idea.comments?.[0]?.count || 0,
+          reactions_count: idea.reactions?.[0]?.count || 0,
+          user_reaction_emoji: idea.user_reaction?.[0]?.emoji || null,
+          author: Array.isArray(idea.author) ? idea.author[0] : idea.author,
+          position: Array.isArray(idea.positions) ? idea.positions[0] : idea.positions
+        };
+      }) as IdeaRow[];
     },
     enabled: !!sessionId,
   });
@@ -74,6 +93,28 @@ export function useIdeas(sessionId: string) {
           event: "*",
           schema: "public",
           table: "idea_positions",
+        },
+        () => {
+           queryClient.invalidateQueries({ queryKey: ["ideas", sessionId] });
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "idea_comments",
+        },
+        () => {
+           queryClient.invalidateQueries({ queryKey: ["ideas", sessionId] });
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "idea_reactions",
         },
         () => {
            queryClient.invalidateQueries({ queryKey: ["ideas", sessionId] });

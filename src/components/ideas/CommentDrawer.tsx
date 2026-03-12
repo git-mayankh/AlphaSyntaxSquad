@@ -80,6 +80,8 @@ export const CommentDrawer = ({ isOpen, onClose, ideaId, ideaTitle }: CommentDra
       
       if (error) throw error;
       setInputValue("");
+      queryClient.invalidateQueries({ queryKey: ["comments", ideaId] });
+      queryClient.invalidateQueries({ queryKey: ["ideas"] });
     } catch (err: any) {
       toast.error(err.message || "Failed to post comment");
     } finally {
@@ -143,7 +145,6 @@ export const CommentDrawer = ({ isOpen, onClose, ideaId, ideaTitle }: CommentDra
                         <p className="text-[14px] text-text-secondary leading-relaxed">{c.text}</p>
                         <div className="flex items-center gap-3 mt-2 text-[12px] font-medium text-text-tertiary">
                           <button className="hover:text-indigo-400 transition-colors">Reply</button>
-                          <button className="hover:text-pink-400 transition-colors flex items-center gap-1"><Heart className="w-3.5 h-3.5" /> React</button>
                         </div>
                       </div>
                     </div>
@@ -163,15 +164,21 @@ export const CommentDrawer = ({ isOpen, onClose, ideaId, ideaTitle }: CommentDra
                     placeholder="Write a comment..."
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
-                    className="w-full bg-bg-elevated border border-border-default rounded-[20px] py-2.5 pl-4 pr-12 text-[14px] text-text-primary placeholder:text-text-disabled outline-none focus:border-indigo-500/50 resize-none min-h-[44px] max-h-[120px] transition-colors overflow-hidden"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSubmit();
+                      }
+                    }}
+                    className="w-full bg-bg-elevated border border-border-default rounded-[20px] py-2.5 pl-4 pr-12 text-[14px] text-text-primary placeholder:text-text-disabled outline-none focus:border-indigo-500/50 resize-none min-h-[44px] max-h-[120px] transition-colors overflow-hidden flex items-center"
                   />
                   <button 
                     onClick={handleSubmit}
                     className={cn(
-                      "absolute right-1.5 bottom-1.5 w-8 h-8 rounded-full flex items-center justify-center transition-all",
+                      "absolute right-1.5 top-1.5 w-8 h-8 rounded-full flex items-center justify-center transition-all",
                       inputValue.trim() && !isSubmitting
                         ? "bg-indigo-500 text-white shadow-glow-indigo hover:bg-indigo-600 hover:scale-105" 
-                        : "bg-surface text-text-tertiary cursor-not-allowed opacity-50"
+                        : "bg-bg-elevated text-text-tertiary cursor-not-allowed opacity-50"
                     )}
                     disabled={!inputValue.trim() || isSubmitting}
                   >
