@@ -1,20 +1,58 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Plus, LogIn, Users as UsersIcon, Building2, ChevronRight, Loader2 } from "lucide-react";
+import { Plus, LogIn, Users as UsersIcon, Building2, ChevronRight, Loader2, Edit2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { useOrganizations } from "@/hooks/useOrganizations";
+import { useOrganizations, Organization } from "@/hooks/useOrganizations";
 import { CreateOrgModal } from "@/components/dashboard/CreateOrgModal";
 import { JoinOrgModal } from "@/components/dashboard/JoinOrgModal";
+import { EditOrgModal } from "@/components/dashboard/EditOrgModal";
+import { DeleteOrgModal } from "@/components/dashboard/DeleteOrgModal";
 import { useRouter } from "next/navigation";
+import { createSupabaseClient } from "@/lib/supabase/client";
 
 export default function DashboardOrganizations() {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [joinModalOpen, setJoinModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const router = useRouter();
   
-  const { data: organizations, isLoading } = useOrganizations();
+  const { data: organizations, isLoading, deleteOrganization, isDeleting } = useOrganizations();
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user } } = await createSupabaseClient().auth.getUser();
+      setUserId(user?.id || null);
+    };
+    fetchUser();
+  }, []);
+
+  const handleDeleteClick = (e: React.MouseEvent, org: Organization) => {
+    e.stopPropagation();
+    setSelectedOrg(org);
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!selectedOrg) return;
+    try {
+      await deleteOrganization(selectedOrg.id);
+      setDeleteModalOpen(false);
+      setSelectedOrg(null);
+    } catch (err: any) {
+      console.error(err);
+    }
+  };
+
+  const handleEditClick = (e: React.MouseEvent, org: Organization) => {
+    e.stopPropagation();
+    setSelectedOrg(org);
+    setEditModalOpen(true);
+  };
 
   return (
     <div className="min-h-screen bg-bg-base flex flex-col items-center pt-24 pb-12 px-6">
@@ -104,28 +142,49 @@ export default function DashboardOrganizations() {
         ) : organizations && organizations.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {organizations.map((org: any, i) => (
-              <motion.button
+              <motion.div
                 key={org.id}
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.4 + (i * 0.05) }}
                 onClick={() => router.push(`/sessions?org=${org.id}`)}
-                className="glass-card p-5 rounded-xl hover:border-border-strong hover:-translate-y-1 transition-all text-left group flex flex-col"
+                className="cursor-pointer glass-card p-5 rounded-xl hover:border-border-strong hover:-translate-y-1 transition-all text-left group flex flex-col"
               >
-                <div className="flex items-start justify-between mb-4">
+                <div className="flex items-start justify-between mb-4 w-full">
                   <div className="w-10 h-10 rounded-lg bg-bg-elevated border border-border-default flex items-center justify-center text-text-primary font-bold font-display text-lg">
                     {org.name.substring(0, 1).toUpperCase()}
                   </div>
-                  <span className="text-[10px] font-semibold tracking-wider uppercase text-text-tertiary bg-bg-base px-2 py-1 rounded-md border border-border-subtle group-hover:border-indigo-500/30 group-hover:text-indigo-400 transition-colors">
-                    {org.share_code}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-semibold tracking-wider uppercase text-text-tertiary bg-bg-base px-2 py-1 rounded-md border border-border-subtle group-hover:border-indigo-500/30 group-hover:text-indigo-400 transition-colors">
+                      {org.share_code}
+                    </span>
+                    {userId && org.created_by === userId && (
+                      <div className="flex opacity-0 group-hover:opacity-100 transition-opacity gap-1">
+                        <button 
+                          onClick={(e) => handleEditClick(e, org)}
+                          className="p-1.5 text-text-tertiary hover:text-indigo-400 hover:bg-indigo-500/10 rounded transition-colors"
+                          title="Edit"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button 
+                          onClick={(e) => handleDeleteClick(e, org)}
+                          className="p-1.5 text-text-tertiary hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
+                          title="Delete"
+                          disabled={isDeleting}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <h4 className="font-display font-bold text-text-primary text-lg mb-1 truncate">{org.name}</h4>
                 <p className="text-text-secondary text-sm flex items-center gap-1.5 mt-auto">
                   <UsersIcon className="w-3.5 h-3.5" />
                   {org.member_count} {org.member_count === 1 ? 'member' : 'members'}
                 </p>
-              </motion.button>
+              </motion.div>
             ))}
           </div>
         ) : (
@@ -139,6 +198,14 @@ export default function DashboardOrganizations() {
       {/* Modals */}
       <CreateOrgModal isOpen={createModalOpen} onClose={() => setCreateModalOpen(false)} />
       <JoinOrgModal isOpen={joinModalOpen} onClose={() => setJoinModalOpen(false)} />
+      <EditOrgModal isOpen={editModalOpen} onClose={() => {setEditModalOpen(false); setSelectedOrg(null);}} organization={selectedOrg} />
+      <DeleteOrgModal 
+        isOpen={deleteModalOpen} 
+        onClose={() => {setDeleteModalOpen(false); setSelectedOrg(null);}} 
+        onConfirm={confirmDelete}
+        organization={selectedOrg} 
+        isDeleting={isDeleting}
+      />
 
     </div>
   );

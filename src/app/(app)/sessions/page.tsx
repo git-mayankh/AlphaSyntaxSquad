@@ -10,6 +10,7 @@ import { JoinSessionModal } from "@/components/sessions/JoinSessionModal";
 import { createSupabaseClient } from "@/lib/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
+import { useOrganizations } from "@/hooks/useOrganizations";
 
 const StatCard = ({ icon: Icon, colorClass, label, value, trend, trendUp, delay }: any) => {
   const [displayValue, setDisplayValue] = useState(0);
@@ -64,6 +65,8 @@ export default function Dashboard() {
   const supabase = createSupabaseClient();
   const searchParams = useSearchParams();
   const currentOrgId = searchParams.get("org");
+  const { data: orgs, isLoading: isOrgsLoading } = useOrganizations();
+  const hasOrgs = orgs && orgs.length > 0;
 
   // Fetch user's sessions
   const { data: sessions, isLoading: isSessionsLoading, refetch } = useQuery({
@@ -77,7 +80,7 @@ export default function Dashboard() {
         .select(`
           id, title, description, status, category, tags, created_at, invite_code,
           created_by, organization_id,
-          ideas:ideas(count),
+          ideas!left(author_id, count),
           idea_votes:ideas(idea_votes(count))
         `)
         .order("created_at", { ascending: false });
@@ -85,7 +88,8 @@ export default function Dashboard() {
       if (currentOrgId) {
         query = query.eq("organization_id", currentOrgId);
       } else {
-        query = query.eq("created_by", user.id);
+        // Fetch if user created it OR if user has authored an idea in it
+        query = query.or(`created_by.eq.${user.id},ideas.author_id.eq.${user.id}`);
       }
       
       const { data, error } = await query;
@@ -104,7 +108,7 @@ export default function Dashboard() {
       const [sessionsRes, ideasRes] = await Promise.all([
         currentOrgId 
           ? supabase.from("sessions").select("id", { count: "exact" }).eq("organization_id", currentOrgId)
-          : supabase.from("sessions").select("id", { count: "exact" }).eq("created_by", user.id),
+          : supabase.from("sessions").select("id", { count: "exact" }).or(`created_by.eq.${user.id},ideas.author_id.eq.${user.id}`),
         currentOrgId // simplified ideas count for now
           ? supabase.from("ideas").select("id", { count: "exact" }) // would need a join to filter by org accurately
           : supabase.from("ideas").select("id", { count: "exact" }).eq("author_id", user.id),
@@ -119,23 +123,31 @@ export default function Dashboard() {
     }
   });
 
+  // Deduplicate sessions (since left join can return multiple rows if not handled nicely by Postgrest mapped arrays)
+  const uniqueSessions = Array.from(new Map((sessions || []).map((s: any) => [s.id, s])).values());
+
   // Map raw Supabase data to SessionCard props
-  const mappedSessions = (sessions || []).map((s: any, i: number) => ({
-    id: s.id,
-    title: s.title,
-    description: s.description || "No description provided.",
-    status: s.status as "active" | "closed",
-    timeAgo: `created ${new Date(s.created_at).toLocaleDateString()}`,
-    tags: s.tags || [],
-    stats: {
-      ideas: s.ideas?.[0]?.count || 0,
-      members: 1,
-      votes: 0,
-    },
-    members: [{ name: "You" }],
-    colorIndex: i % 5,
-    inviteCode: s.invite_code,
-  }));
+  const mappedSessions = uniqueSessions.map((s: any, i: number) => {
+    // calculate idea count - if it's an array, it's length (left join) or if it's got count, use that.
+    const ideaCount = Array.isArray(s.ideas) ? s.ideas.length : (s.ideas?.[0]?.count || s.ideas?.count || 0);
+
+    return {
+      id: s.id,
+      title: s.title,
+      description: s.description || "No description provided.",
+      status: s.status as "active" | "closed",
+      timeAgo: `created ${new Date(s.created_at).toLocaleDateString()}`,
+      tags: s.tags || [],
+      stats: {
+        ideas: ideaCount,
+        members: 1,
+        votes: 0,
+      },
+      members: [{ name: "You" }],
+      colorIndex: i % 5,
+      inviteCode: s.invite_code,
+    };
+  });
 
   return (
     <div className="p-8 md:p-10 max-w-[1400px] mx-auto min-h-screen">
@@ -144,12 +156,26 @@ export default function Dashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <h1 className="font-display font-bold text-[28px] text-white tracking-tight">Your Sessions</h1>
         <div className="flex items-center gap-3">
-          <Button variant="secondary" icon={<LogIn className="w-4 h-4" />} onClick={() => setJoinModalOpen(true)}>
-            Join Session
-          </Button>
-          <Button variant="primary" icon={<Plus className="w-4 h-4" />} onClick={() => setCreateModalOpen(true)} className="shadow-glow-indigo">
-            New Session
-          </Button>
+          <div className="group relative">
+            <Button variant="secondary" icon={<LogIn className="w-4 h-4" />} onClick={() => setJoinModalOpen(true)} disabled={!hasOrgs && !isOrgsLoading}>
+              Join Session
+            </Button>
+            {!hasOrgs && !isOrgsLoading && (
+              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-3 py-1.5 bg-bg-elevated border border-border-strong rounded-lg text-xs text-text-secondary whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
+                Join an organization first
+              </div>
+            )}
+          </div>
+          <div className="group relative">
+            <Button variant="primary" icon={<Plus className="w-4 h-4" />} onClick={() => setCreateModalOpen(true)} disabled={!hasOrgs && !isOrgsLoading} className="shadow-glow-indigo disabled:shadow-none">
+              New Session
+            </Button>
+            {!hasOrgs && !isOrgsLoading && (
+              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-3 py-1.5 bg-bg-elevated border border-border-strong rounded-lg text-xs text-text-secondary whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
+                Join an organization first
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

@@ -16,20 +16,22 @@ export function useOrganizations() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return [];
 
-      // Fetch orgs where user is member or creator
+      // Fetch orgs where user is member
       const { data, error } = await supabase
         .from("organizations")
         .select(`
           *,
-          members:organization_members(count)
+          members:organization_members!inner(user_id),
+          all_members:organization_members(count)
         `)
+        .eq("members.user_id", user.id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
       
       return data.map((org: any) => ({
         ...org,
-        member_count: org.members?.[0]?.count || 1
+        member_count: org.all_members?.[0]?.count || 1
       })) as Organization[];
     }
   });
@@ -107,11 +109,56 @@ export function useOrganizations() {
     }
   });
 
+  const updateOrgMutation = useMutation({
+    mutationFn: async ({ id, name }: { id: string; name: string }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { data, error } = await supabase
+        .from("organizations")
+        .update({ name })
+        .eq("id", id)
+        .eq("created_by", user.id) // Only owner can edit
+        .select()
+        .single();
+
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["organizations"] });
+    }
+  });
+
+  const deleteOrgMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { error } = await supabase
+        .from("organizations")
+        .delete()
+        .eq("id", id)
+        .eq("created_by", user.id); // Only owner can delete
+
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["organizations"] });
+      // Might want to invalidate sessions as well if deleting orgs deletes sessions,
+      // but standard cascade should work. We just update the org list.
+    }
+  });
+
   return {
     ...query,
     createOrganization: createOrgMutation.mutateAsync,
     joinOrganization: joinOrgMutation.mutateAsync,
+    updateOrganization: updateOrgMutation.mutateAsync,
+    deleteOrganization: deleteOrgMutation.mutateAsync,
     isCreating: createOrgMutation.isPending,
-    isJoining: joinOrgMutation.isPending
+    isJoining: joinOrgMutation.isPending,
+    isUpdating: updateOrgMutation.isPending,
+    isDeleting: deleteOrgMutation.isPending
   };
 }
