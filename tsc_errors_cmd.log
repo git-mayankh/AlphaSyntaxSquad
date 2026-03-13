@@ -1,0 +1,1 @@
+src/app/(app)/settings/page.tsx(65,33): error TS2322: Type '"icon"' is not assignable to type '"sm" | "md" | "lg" | undefined'.
