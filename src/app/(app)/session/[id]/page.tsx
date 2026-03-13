@@ -222,16 +222,7 @@ export default function SessionBoardPage({ params }: { params: Promise<{ id: str
           />
         )}
 
-        {/* FLOATING ADD BUTTON (top-left overlay) */}
-        <motion.button
-          whileHover={{ scale: 1.05, y: -2 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => setIsCreateModalOpen(true)}
-          className="absolute top-[calc(3.5rem+16px)] left-4 z-20 flex items-center gap-2 px-4 py-2.5 bg-indigo-500 text-white rounded-2xl text-sm font-semibold shadow-lg hover:bg-indigo-600 transition-colors shadow-indigo-500/30"
-        >
-          <Plus className="w-4 h-4" />
-          Add Note
-        </motion.button>
+        {/* FLOATING ADD BUTTON REMOVED (Moved to Bottom Dock) */}
 
         {/* SLIDING BOTTOM PANEL */}
         <AnimatePresence>
@@ -352,12 +343,26 @@ export default function SessionBoardPage({ params }: { params: Promise<{ id: str
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.3, type: "spring", damping: 20 }}
-            className="flex items-center gap-1 px-2 py-2 rounded-2xl shadow-2xl border border-white/15"
+            className="flex items-center gap-1 p-1.5 rounded-2xl shadow-2xl border border-white/15 pointer-events-auto"
             style={{ backgroundColor: "rgba(26,24,37,0.95)", backdropFilter: "blur(20px)" }}
           >
+            {/* Primary Add Note Action */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setIsCreateModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 mr-1 bg-indigo-500 text-white rounded-xl text-sm font-semibold shadow-lg shadow-indigo-500/20 hover:bg-indigo-600 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:block">Add Note</span>
+            </motion.button>
+            
+            <div className="w-px h-6 bg-white/10 mx-1" />
+
             {bottomTabs.map((tab) => {
               const Icon = tab.icon;
               const isActive = activePanel === tab.id;
+              
               return (
                 <motion.button
                   key={tab.id}
@@ -381,7 +386,9 @@ export default function SessionBoardPage({ params }: { params: Promise<{ id: str
                   {isActive && (
                     <motion.div
                       layoutId="activeTabIndicator"
-                      className="absolute inset-0 bg-indigo-500/10 rounded-xl"
+                      className="absolute inset-0 border border-indigo-500/40 rounded-xl"
+                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                      style={{ zIndex: -1 }}
                     />
                   )}
                 </motion.button>

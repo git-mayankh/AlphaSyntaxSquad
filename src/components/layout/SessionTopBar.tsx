@@ -235,19 +235,6 @@ export const SessionTopBar = ({
         )}
       </motion.button>
 
-      {/* AI Button */}
-      <motion.button
-        onClick={onToggleAi}
-        whileTap={{ scale: 0.95 }}
-        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-          isAiOpen
-            ? "bg-indigo-100 text-indigo-700 border border-indigo-300"
-            : "bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-200"
-        }`}
-      >
-        <Brain className="w-4 h-4" />
-        AI
-      </motion.button>
     </header>
   );
 };

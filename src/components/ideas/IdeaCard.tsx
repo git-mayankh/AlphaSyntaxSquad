@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ChevronUp, MessageCircle, MoreHorizontal, Sparkles, Trash2, Star, GripVertical } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Dropdown } from "@/components/ui/Dropdown";
@@ -58,6 +58,11 @@ export const IdeaCard = ({
   const [voteCount, setVoteCount] = useState(votes);
   const [showEmojis, setShowEmojis] = useState(false);
   const supabase = createSupabaseClient();
+
+  useEffect(() => {
+    setHasVoted(initialVoted);
+    setVoteCount(votes);
+  }, [initialVoted, votes]);
 
   const color = STICKY_COLORS[colorVariant % STICKY_COLORS.length];
   const hasScores = scores && (scores.feasibility || scores.market || scores.innovation);

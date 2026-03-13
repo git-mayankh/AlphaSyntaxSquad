@@ -1,10 +1,13 @@
 export const getAvatarColor = (name: string) => {
   const colors = [
-    'linear-gradient(135deg, var(--indigo-400), var(--indigo-600))',
-    'linear-gradient(135deg, var(--cyan-400), #0891B2)',
-    'linear-gradient(135deg, var(--pink-400), #DB2777)',
-    'linear-gradient(135deg, var(--amber-400), #D97706)',
-    'linear-gradient(135deg, var(--green-400), #16A34A)',
+    'linear-gradient(135deg, #A78BFA, #7C3AED)', // Purple
+    'linear-gradient(135deg, #60A5FA, #2563EB)', // Blue
+    'linear-gradient(135deg, #F472B6, #DB2777)', // Pink
+    'linear-gradient(135deg, #FBBF24, #D97706)', // Amber
+    'linear-gradient(135deg, #34D399, #059669)', // Emerald
+    'linear-gradient(135deg, #FB923C, #EA580C)', // Orange
+    'linear-gradient(135deg, #F87171, #DC2626)', // Red
+    'linear-gradient(135deg, #818CF8, #4F46E5)'  // Indigo
   ];
   let hash = 0;
   for (let i = 0; i < name.length; i++) {

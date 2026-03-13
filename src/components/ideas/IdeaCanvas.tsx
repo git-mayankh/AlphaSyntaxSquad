@@ -80,18 +80,23 @@ export const IdeaCanvas = forwardRef<IdeaCanvasHandle, IdeaCanvasProps>(
     }));
 
     useEffect(() => {
-      const initial: Record<string, Position> = {};
-      ideas.forEach((idea, i) => {
-        if (!positions[idea.id]) {
-          initial[idea.id] = idea.position || {
-            x: 80 + (i % 4) * 360,
-            y: 80 + Math.floor(i / 4) * 300,
-          };
+      setPositions(prev => {
+        const initial: Record<string, Position> = {};
+        let count = Object.keys(prev).length;
+        ideas.forEach((idea) => {
+          if (!prev[idea.id] && !initial[idea.id]) {
+            initial[idea.id] = idea.position || {
+              x: 80 + (count % 4) * 360,
+              y: 80 + Math.floor(count / 4) * 300,
+            };
+            count++;
+          }
+        });
+        if (Object.keys(initial).length > 0) {
+          return { ...prev, ...initial };
         }
+        return prev;
       });
-      if (Object.keys(initial).length > 0) {
-        setPositions(prev => ({ ...initial, ...prev }));
-      }
     }, [ideas]);
 
     // When clusters change, gently arrange cards within cluster zones
@@ -142,10 +147,31 @@ export const IdeaCanvas = forwardRef<IdeaCanvasHandle, IdeaCanvasProps>(
 
     const handleMouseUp = useCallback(() => setIsPanning(false), []);
 
-    const handleWheel = useCallback((e: React.WheelEvent) => {
-      e.preventDefault();
-      const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
-      setZoom(prev => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, prev + delta)));
+    // Native wheel listener is required because React's synthetic onWheel is passive
+    // and cannot prevent default browser pinch-to-zoom behavior on trackpads.
+    useEffect(() => {
+      const el = canvasRef.current;
+      if (!el) return;
+
+      const handleNativeWheel = (e: WheelEvent) => {
+        // Only prevent default if they are pinching (ctrlKey) or explicitly scrolling
+        // inside the canvas to zoom.
+        e.preventDefault();
+        
+        let delta = 0;
+        if (e.ctrlKey) {
+          // Trackpad pinch-to-zoom
+          delta = e.deltaY * -0.01;
+        } else {
+          // Standard mouse wheel
+          delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
+        }
+
+        setZoom(prev => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, prev + delta)));
+      };
+
+      el.addEventListener('wheel', handleNativeWheel, { passive: false });
+      return () => el.removeEventListener('wheel', handleNativeWheel);
     }, []);
 
     const handleCardMouseDown = useCallback(
@@ -194,7 +220,6 @@ export const IdeaCanvas = forwardRef<IdeaCanvasHandle, IdeaCanvasProps>(
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
-        onWheel={handleWheel}
       >
         {/* AI Analyzing indicator */}
         <AnimatePresence>

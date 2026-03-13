@@ -11,6 +11,7 @@ import Placeholder from '@tiptap/extension-placeholder';
 import { IdeaCard } from "./IdeaCard";
 import { createSupabaseClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 export interface CreateIdeaModalProps {
   isOpen: boolean;
@@ -36,6 +37,7 @@ export const CreateIdeaModal = ({ isOpen, onClose, sessionId }: CreateIdeaModalP
   const [isAiImproving, setIsAiImproving] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const supabase = createSupabaseClient();
+  const queryClient = useQueryClient();
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -128,6 +130,7 @@ export const CreateIdeaModal = ({ isOpen, onClose, sessionId }: CreateIdeaModalP
       })();
 
       // Reset form state FIRST, then close & show toast
+      queryClient.invalidateQueries({ queryKey: ["ideas", sessionId] });
       setIsSubmitting(false);
       setStep(1);
       setTitle("");
