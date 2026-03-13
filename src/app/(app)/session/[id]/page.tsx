@@ -19,12 +19,12 @@ import { useIdeaClusters } from "@/hooks/useIdeaClusters";
 import { createSupabaseClient } from "@/lib/supabase/client";
 import {
   Loader2, Plus, MessageCircle, Brain, Sparkles, LayoutList,
-  TrendingUp, Mic, StickyNote, Search, X, ChevronUp
+  TrendingUp, Mic, StickyNote, Search, X, ChevronUp, Trophy, Send
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { toast } from "sonner";
 
-type BottomTab = "ideas" | "chat" | "ai" | "analytics" | "transcript";
+type BottomTab = "ideas" | "chat" | "ai" | "analytics" | "transcript" | "voting";
 
 const categories = [
   { id: "Core Feature", name: "Core Feature", color: "#6366f1" },
@@ -32,6 +32,88 @@ const categories = [
   { id: "Growth", name: "Growth", color: "#f59e0b" },
   { id: "Other", name: "Other", color: "#8b5cf6" },
 ];
+
+// Inline AI Chat — rendered inside bottom panel (no fixed position)
+function InlineAIChat() {
+  const [msgs, setMsgs] = useState<{id:string; role:"user"|"ai"; text:string}[]>([
+    { id: "welcome", role: "ai", text: "Hi! I'm your AI Catalyst. Ask me to generate ideas, summarize themes, or brainstorm anything!" }
+  ]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [msgs, loading]);
+
+  const send = async () => {
+    if (!input.trim() || loading) return;
+    const userText = input.trim();
+    setMsgs(prev => [...prev, { id: Date.now().toString(), role: "user", text: userText }]);
+    setInput("");
+    setLoading(true);
+    try {
+      const res = await fetch("/api/ai/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: userText }),
+      });
+      const data = await res.json();
+      setMsgs(prev => [...prev, { id: (Date.now()+1).toString(), role: "ai", text: data.text || data.error || "Something went wrong." }]);
+    } catch {
+      setMsgs(prev => [...prev, { id: (Date.now()+1).toString(), role: "ai", text: "Network error. Please try again." }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-full">
+      <div ref={scrollRef} className="flex-1 overflow-auto p-4 space-y-3">
+        {msgs.map(m => (
+          <div key={m.id} className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}>
+            <div className={cn(
+              "max-w-[80%] px-3.5 py-2.5 rounded-2xl text-[13px] leading-relaxed whitespace-pre-wrap",
+              m.role === "user"
+                ? "bg-indigo-500 text-white rounded-tr-sm"
+                : "bg-white/8 text-white/80 border border-white/10 rounded-tl-sm"
+            )}>
+              {m.role === "ai" && <Sparkles className="w-3.5 h-3.5 text-indigo-400 inline mr-1.5 -mt-0.5" />}
+              {m.text}
+            </div>
+          </div>
+        ))}
+        {loading && (
+          <div className="flex justify-start">
+            <div className="bg-white/8 border border-white/10 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-1.5">
+              <motion.div animate={{ y: [0, -3, 0] }} transition={{ repeat: Infinity, duration: 0.5, delay: 0 }} className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+              <motion.div animate={{ y: [0, -3, 0] }} transition={{ repeat: Infinity, duration: 0.5, delay: 0.15 }} className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+              <motion.div animate={{ y: [0, -3, 0] }} transition={{ repeat: Infinity, duration: 0.5, delay: 0.3 }} className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+            </div>
+          </div>
+        )}
+      </div>
+      <div className="p-3 border-t border-white/8">
+        <div className="relative flex items-center">
+          <input
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && !e.shiftKey && send()}
+            placeholder="Ask AI anything about your ideas..."
+            className="w-full bg-white/5 border border-white/10 rounded-full py-2.5 pl-4 pr-12 text-sm text-white/80 outline-none focus:border-indigo-500/50 placeholder:text-white/30 transition-colors"
+          />
+          <button
+            onClick={send}
+            disabled={!input.trim() || loading}
+            className="absolute right-1.5 w-8 h-8 rounded-full bg-indigo-500 text-white flex items-center justify-center disabled:opacity-40 hover:bg-indigo-600 transition-colors"
+          >
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 ml-[-1px]" />}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function SessionBoardPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -172,8 +254,14 @@ export default function SessionBoardPage({ params }: { params: Promise<{ id: str
     id: i.id, title: i.title, description: i.description, votes: i.votes_count
   }));
 
+  const votedIdeas = useMemo(() => {
+    return [...ideas]
+      .sort((a: any, b: any) => (b.votes_count ?? 0) - (a.votes_count ?? 0));
+  }, [ideas]);
+
   const bottomTabs = [
     { id: "ideas" as BottomTab, label: "Ideas", icon: LayoutList, count: ideas.length },
+    { id: "voting" as BottomTab, label: "Voting", icon: Trophy },
     { id: "chat" as BottomTab, label: "Chat", icon: MessageCircle },
     { id: "ai" as BottomTab, label: "AI", icon: Sparkles },
     { id: "analytics" as BottomTab, label: "Analyze", icon: Brain },
@@ -239,6 +327,7 @@ export default function SessionBoardPage({ params }: { params: Promise<{ id: str
               <div className="flex items-center justify-between px-5 py-3 border-b border-white/8">
                 <span className="text-sm font-semibold text-white/80 capitalize">
                   {activePanel === "ideas" ? `Ideas (${filteredIdeas.length})` :
+                   activePanel === "voting" ? `Voting Leaderboard` :
                    activePanel === "chat" ? "Session Chat" :
                    activePanel === "ai" ? "AI Assistant" :
                    activePanel === "analytics" ? "Analytics" : "Voice Transcript"}
@@ -311,14 +400,75 @@ export default function SessionBoardPage({ params }: { params: Promise<{ id: str
                       )}
                     </motion.div>
                   )}
+                  {activePanel === "voting" && (
+                    <motion.div key="voting" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-4">
+                      {votedIdeas.length === 0 ? (
+                        <div className="text-center py-8 text-white/30 text-sm">No votes yet. Vote on ideas to see the leaderboard!</div>
+                      ) : (
+                        <div className="flex flex-col gap-2">
+                          {votedIdeas.map((idea: any, i: number) => {
+                            const catColor = categories.find(c => c.id === idea.category)?.color || "#8b5cf6";
+                            const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : null;
+                            return (
+                              <motion.button
+                                key={idea.id}
+                                onClick={() => handlePanToIdea(idea.id)}
+                                initial={{ opacity: 0, x: -12 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: i * 0.04 }}
+                                className={cn(
+                                  "flex items-center gap-3 p-3 rounded-xl border transition-all group text-left w-full",
+                                  i === 0
+                                    ? "bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/15"
+                                    : "bg-white/5 border-white/8 hover:bg-white/10 hover:border-indigo-500/30"
+                                )}
+                              >
+                                {/* Rank */}
+                                <div className={cn(
+                                  "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-sm font-bold",
+                                  i === 0 ? "bg-amber-500/20 text-amber-300" :
+                                  i === 1 ? "bg-gray-400/20 text-gray-300" :
+                                  i === 2 ? "bg-orange-500/20 text-orange-300" :
+                                  "bg-white/10 text-white/40"
+                                )}>
+                                  {medal || `#${i + 1}`}
+                                </div>
+                                
+                                {/* Idea Info */}
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-0.5">
+                                    <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: catColor }} />
+                                    <span className="text-[10px] text-white/40 font-medium uppercase tracking-wide">{idea.category || "Other"}</span>
+                                  </div>
+                                  <p className="text-sm font-semibold text-white/80 group-hover:text-white transition-colors truncate">{idea.title}</p>
+                                  {idea.author?.name && (
+                                    <p className="text-[11px] text-white/30 mt-0.5">by {idea.author.name}</p>
+                                  )}
+                                </div>
+
+                                {/* Vote Count */}
+                                <div className={cn(
+                                  "flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold shrink-0",
+                                  i === 0 ? "bg-amber-500/20 text-amber-300" : "bg-green-500/15 text-green-400"
+                                )}>
+                                  <ChevronUp className="w-3.5 h-3.5" />
+                                  {idea.votes_count}
+                                </div>
+                              </motion.button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
                   {activePanel === "chat" && (
                     <motion.div key="chat" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full">
                       <ChatPanel sessionId={id} />
                     </motion.div>
                   )}
                   {activePanel === "ai" && (
-                    <motion.div key="ai" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full overflow-auto">
-                      <AIAssistantPanel isOpen={true} onClose={() => setActivePanel(null)} />
+                    <motion.div key="ai" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full flex flex-col">
+                      <InlineAIChat />
                     </motion.div>
                   )}
                   {activePanel === "analytics" && (

@@ -92,11 +92,22 @@ export const IdeaCard = ({
         origin: { x: (rect.left + rect.width / 2) / window.innerWidth, y: (rect.top + rect.height / 2) / window.innerHeight }
       });
       toast.success("✓ Upvoted!", { position: "bottom-center" });
-      void supabase.from("idea_votes").insert({ idea_id: id, user_id: userData.user.id });
+      const { error } = await supabase.from("idea_votes").insert({ idea_id: id, user_id: userData.user.id });
+      if (error) {
+        console.error("Vote insert failed:", error);
+        setHasVoted(false);
+        setVoteCount(c => c - 1);
+        toast.error("Vote failed: " + error.message);
+      }
     } else {
       setHasVoted(false);
       setVoteCount(c => c - 1);
-      void supabase.from("idea_votes").delete().match({ idea_id: id, user_id: userData.user.id });
+      const { error } = await supabase.from("idea_votes").delete().match({ idea_id: id, user_id: userData.user.id });
+      if (error) {
+        console.error("Vote delete failed:", error);
+        setHasVoted(true);
+        setVoteCount(c => c + 1);
+      }
     }
   };
 

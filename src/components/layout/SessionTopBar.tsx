@@ -75,12 +75,39 @@ export const SessionTopBar = ({
         });
     };
 
+    // Also fetch all distinct contributors (idea authors + message authors) from DB as a reliable count
+    const fetchSessionParticipants = async () => {
+      const { data: ideaAuthors } = await supabase
+        .from("ideas")
+        .select("author_id, author:profiles!ideas_author_id_fkey(id, name, avatar_url)")
+        .eq("session_id", sessionId)
+        .not("author_id", "is", null);
+
+      const { data: msgAuthors } = await supabase
+        .from("messages")
+        .select("author_id, author:profiles!messages_author_id_fkey(id, name, avatar_url)")
+        .eq("session_id", sessionId);
+
+      const allAuthors = new Map<string, Participant>();
+      [...(ideaAuthors || []), ...(msgAuthors || [])].forEach((row: any) => {
+        const profile = Array.isArray(row.author) ? row.author[0] : row.author;
+        if (profile?.id && !allAuthors.has(profile.id)) {
+          allAuthors.set(profile.id, { id: profile.id, name: profile.name || "Unknown", avatar_url: profile.avatar_url });
+        }
+      });
+
+      // Use DB participants as baseline if presence hasn't loaded yet
+      setParticipants(prev => prev.length > 0 ? prev : Array.from(allAuthors.values()));
+    };
+
     setupPresence();
+    fetchSessionParticipants();
 
     return () => {
       if (channel) supabase.removeChannel(channel);
     };
-  }, [sessionId, supabase]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId]);
 
   const formatTime = (s: number) => {
     const h = Math.floor(s / 3600);

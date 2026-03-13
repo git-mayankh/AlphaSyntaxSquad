@@ -59,8 +59,6 @@ export const Sidebar = () => {
   const navItems = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "My Sessions", href: "/sessions", icon: Layers },
-    { name: "Starred Ideas", href: "/starred", icon: Star },
-    { name: "Analytics", href: "/analytics", icon: BarChart3 },
   ];
 
   const displayName = profile?.name || "Loading...";

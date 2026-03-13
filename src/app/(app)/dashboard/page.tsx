@@ -67,7 +67,7 @@ export default function DashboardOrganizations() {
           <Building2 className="w-8 h-8 sm:w-10 sm:h-10 text-indigo-400" />
         </div>
         <h1 className="font-display font-bold text-4xl sm:text-5xl text-text-primary tracking-tight mb-4">
-          Welcome to <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">SyntaxSquad</span>
+          Welcome to <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">IdeaForge</span>
         </h1>
         <p className="text-text-secondary text-lg">
           Collaborate on ideas through organizations. Start by creating a new workspace or joining an existing one.
