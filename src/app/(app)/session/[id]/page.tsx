@@ -76,16 +76,16 @@ function InlineAIChat() {
               "max-w-[80%] px-3.5 py-2.5 rounded-2xl text-[13px] leading-relaxed whitespace-pre-wrap",
               m.role === "user"
                 ? "bg-indigo-500 text-white rounded-tr-sm"
-                : "bg-white/8 text-white/80 border border-white/10 rounded-tl-sm"
+                : "bg-bg-elevated text-text-primary border border-border-default rounded-tl-sm"
             )}>
-              {m.role === "ai" && <Sparkles className="w-3.5 h-3.5 text-indigo-400 inline mr-1.5 -mt-0.5" />}
+              {m.role === "ai" && <Sparkles className="w-3.5 h-3.5 text-indigo-500 inline mr-1.5 -mt-0.5" />}
               {m.text}
             </div>
           </div>
         ))}
         {loading && (
           <div className="flex justify-start">
-            <div className="bg-white/8 border border-white/10 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-1.5">
+            <div className="bg-bg-elevated border border-border-default rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-1.5">
               <motion.div animate={{ y: [0, -3, 0] }} transition={{ repeat: Infinity, duration: 0.5, delay: 0 }} className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
               <motion.div animate={{ y: [0, -3, 0] }} transition={{ repeat: Infinity, duration: 0.5, delay: 0.15 }} className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
               <motion.div animate={{ y: [0, -3, 0] }} transition={{ repeat: Infinity, duration: 0.5, delay: 0.3 }} className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
@@ -93,14 +93,14 @@ function InlineAIChat() {
           </div>
         )}
       </div>
-      <div className="p-3 border-t border-white/8">
+      <div className="p-3 border-t border-border-default">
         <div className="relative flex items-center">
           <input
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => e.key === "Enter" && !e.shiftKey && send()}
             placeholder="Ask AI anything about your ideas..."
-            className="w-full bg-white/5 border border-white/10 rounded-full py-2.5 pl-4 pr-12 text-sm text-white/80 outline-none focus:border-indigo-500/50 placeholder:text-white/30 transition-colors"
+            className="w-full bg-bg-elevated border border-border-default rounded-full py-2.5 pl-4 pr-12 text-sm text-text-primary outline-none focus:border-indigo-500/50 placeholder:text-text-disabled transition-colors"
           />
           <button
             onClick={send}
@@ -321,18 +321,18 @@ export default function SessionBoardPage({ params }: { params: Promise<{ id: str
               exit={{ y: "100%", opacity: 0 }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
               className="absolute bottom-16 left-0 right-0 z-30 mx-4 mb-2 rounded-2xl overflow-hidden shadow-2xl"
-              style={{ maxHeight: panelHeight, backgroundColor: "#1a1825", border: "1px solid rgba(255,255,255,0.08)" }}
+              style={{ maxHeight: panelHeight, backgroundColor: "rgba(255,252,248,0.97)", border: "1px solid rgba(120,100,80,0.12)" }}
             >
               {/* Panel header */}
-              <div className="flex items-center justify-between px-5 py-3 border-b border-white/8">
-                <span className="text-sm font-semibold text-white/80 capitalize">
+              <div className="flex items-center justify-between px-5 py-3 border-b border-border-default">
+                <span className="text-sm font-semibold text-text-primary capitalize">
                   {activePanel === "ideas" ? `Ideas (${filteredIdeas.length})` :
                    activePanel === "voting" ? `Voting Leaderboard` :
                    activePanel === "chat" ? "Session Chat" :
                    activePanel === "ai" ? "AI Assistant" :
                    activePanel === "analytics" ? "Analytics" : "Voice Transcript"}
                 </span>
-                <button onClick={() => setActivePanel(null)} className="text-white/40 hover:text-white/80 transition-colors p-1 rounded-lg hover:bg-white/5">
+                <button onClick={() => setActivePanel(null)} className="text-text-tertiary hover:text-text-primary transition-colors p-1 rounded-lg hover:bg-bg-hover">
                   <X className="w-4 h-4" />
                 </button>
               </div>
@@ -346,13 +346,13 @@ export default function SessionBoardPage({ params }: { params: Promise<{ id: str
                       <div className="flex gap-2 mb-4 flex-wrap">
                         {/* Search */}
                         <div className="relative flex-1 min-w-[180px]">
-                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30" />
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-disabled" />
                           <input
                             type="text"
                             placeholder="Search ideas..."
                             value={searchQuery}
                             onChange={e => setSearchQuery(e.target.value)}
-                            className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-2 text-sm text-white/80 outline-none focus:border-indigo-500/50 placeholder:text-white/30 transition-colors"
+                            className="w-full bg-bg-elevated border border-border-default rounded-xl pl-9 pr-3 py-2 text-sm text-text-primary outline-none focus:border-indigo-500/50 placeholder:text-text-disabled transition-colors"
                           />
                         </div>
                         {[{ id: null, name: "All" }, ...categories].map((c: any) => (
@@ -362,8 +362,8 @@ export default function SessionBoardPage({ params }: { params: Promise<{ id: str
                             className={cn(
                               "px-3 py-1.5 rounded-xl text-xs font-medium border transition-all",
                               selectedCategory === c.id || (!selectedCategory && !c.id)
-                                ? "bg-indigo-500/20 border-indigo-500/40 text-indigo-300"
-                                : "bg-white/5 border-white/10 text-white/40 hover:border-white/25"
+                                ? "bg-indigo-500/15 border-indigo-500/40 text-indigo-600"
+                                : "bg-bg-elevated border-border-default text-text-tertiary hover:border-border-strong"
                             )}
                           >
                             {c.name}
@@ -372,7 +372,7 @@ export default function SessionBoardPage({ params }: { params: Promise<{ id: str
                       </div>
                       {/* Ideas grid */}
                       {filteredIdeas.length === 0 ? (
-                        <div className="text-center py-8 text-white/30 text-sm">No ideas found</div>
+                        <div className="text-center py-8 text-text-disabled text-sm">No ideas found</div>
                       ) : (
                         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
                           {filteredIdeas.map((idea: any, i: number) => (
@@ -382,13 +382,13 @@ export default function SessionBoardPage({ params }: { params: Promise<{ id: str
                               initial={{ opacity: 0, y: 8 }}
                               animate={{ opacity: 1, y: 0 }}
                               transition={{ delay: i * 0.02 }}
-                              className="text-left p-3 rounded-xl border border-white/8 bg-white/5 hover:bg-white/10 hover:border-indigo-500/30 transition-all group"
+                              className="text-left p-3 rounded-xl border border-border-default bg-bg-elevated hover:bg-bg-hover hover:border-indigo-500/30 transition-all group"
                             >
                               <div className="flex items-center gap-2 mb-1">
                                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: categories.find(c => c.id === idea.category)?.color || "#8b5cf6" }} />
-                                <span className="text-[10px] text-white/40 font-medium uppercase tracking-wide truncate">{idea.category || "Other"}</span>
+                                <span className="text-[10px] text-text-tertiary font-medium uppercase tracking-wide truncate">{idea.category || "Other"}</span>
                               </div>
-                              <div className="text-xs font-semibold text-white/80 group-hover:text-white transition-colors line-clamp-2">{idea.title}</div>
+                              <div className="text-xs font-semibold text-text-primary group-hover:text-indigo-600 transition-colors line-clamp-2">{idea.title}</div>
                               {(idea.votes_count ?? 0) > 0 && (
                                 <div className="flex items-center gap-1 mt-2 text-green-400 text-[10px] font-medium">
                                   <ChevronUp className="w-3 h-3" />{idea.votes_count}
@@ -403,7 +403,7 @@ export default function SessionBoardPage({ params }: { params: Promise<{ id: str
                   {activePanel === "voting" && (
                     <motion.div key="voting" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-4">
                       {votedIdeas.length === 0 ? (
-                        <div className="text-center py-8 text-white/30 text-sm">No votes yet. Vote on ideas to see the leaderboard!</div>
+                        <div className="text-center py-8 text-text-disabled text-sm">No votes yet. Vote on ideas to see the leaderboard!</div>
                       ) : (
                         <div className="flex flex-col gap-2">
                           {votedIdeas.map((idea: any, i: number) => {
@@ -419,17 +419,17 @@ export default function SessionBoardPage({ params }: { params: Promise<{ id: str
                                 className={cn(
                                   "flex items-center gap-3 p-3 rounded-xl border transition-all group text-left w-full",
                                   i === 0
-                                    ? "bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/15"
-                                    : "bg-white/5 border-white/8 hover:bg-white/10 hover:border-indigo-500/30"
+                                    ? "bg-amber-50 border-amber-300 hover:bg-amber-100"
+                                    : "bg-bg-elevated border-border-default hover:bg-bg-hover hover:border-indigo-500/30"
                                 )}
                               >
                                 {/* Rank */}
                                 <div className={cn(
                                   "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-sm font-bold",
-                                  i === 0 ? "bg-amber-500/20 text-amber-300" :
-                                  i === 1 ? "bg-gray-400/20 text-gray-300" :
-                                  i === 2 ? "bg-orange-500/20 text-orange-300" :
-                                  "bg-white/10 text-white/40"
+                                  i === 0 ? "bg-amber-100 text-amber-700" :
+                                  i === 1 ? "bg-gray-100 text-gray-600" :
+                                  i === 2 ? "bg-orange-100 text-orange-600" :
+                                  "bg-bg-hover text-text-tertiary"
                                 )}>
                                   {medal || `#${i + 1}`}
                                 </div>
@@ -438,18 +438,18 @@ export default function SessionBoardPage({ params }: { params: Promise<{ id: str
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-2 mb-0.5">
                                     <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: catColor }} />
-                                    <span className="text-[10px] text-white/40 font-medium uppercase tracking-wide">{idea.category || "Other"}</span>
+                                    <span className="text-[10px] text-text-tertiary font-medium uppercase tracking-wide">{idea.category || "Other"}</span>
                                   </div>
-                                  <p className="text-sm font-semibold text-white/80 group-hover:text-white transition-colors truncate">{idea.title}</p>
+                                  <p className="text-sm font-semibold text-text-primary group-hover:text-indigo-600 transition-colors truncate">{idea.title}</p>
                                   {idea.author?.name && (
-                                    <p className="text-[11px] text-white/30 mt-0.5">by {idea.author.name}</p>
+                                    <p className="text-[11px] text-text-tertiary mt-0.5">by {idea.author.name}</p>
                                   )}
                                 </div>
 
                                 {/* Vote Count */}
                                 <div className={cn(
                                   "flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold shrink-0",
-                                  i === 0 ? "bg-amber-500/20 text-amber-300" : "bg-green-500/15 text-green-400"
+                                  i === 0 ? "bg-amber-100 text-amber-700" : "bg-green-50 text-green-600"
                                 )}>
                                   <ChevronUp className="w-3.5 h-3.5" />
                                   {idea.votes_count}
@@ -493,8 +493,8 @@ export default function SessionBoardPage({ params }: { params: Promise<{ id: str
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.3, type: "spring", damping: 20 }}
-            className="flex items-center gap-1 p-1.5 rounded-2xl shadow-2xl border border-white/15 pointer-events-auto"
-            style={{ backgroundColor: "rgba(26,24,37,0.95)", backdropFilter: "blur(20px)" }}
+            className="flex items-center gap-1 p-1.5 rounded-2xl shadow-lg border border-border-default pointer-events-auto"
+            style={{ backgroundColor: "rgba(255,252,248,0.95)", backdropFilter: "blur(20px)" }}
           >
             {/* Primary Add Note Action */}
             <motion.button
@@ -507,7 +507,7 @@ export default function SessionBoardPage({ params }: { params: Promise<{ id: str
               <span className="hidden sm:block">Add Note</span>
             </motion.button>
             
-            <div className="w-px h-6 bg-white/10 mx-1" />
+            <div className="w-px h-6 bg-border-default mx-1" />
 
             {bottomTabs.map((tab) => {
               const Icon = tab.icon;
@@ -522,14 +522,14 @@ export default function SessionBoardPage({ params }: { params: Promise<{ id: str
                   className={cn(
                     "relative flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all",
                     isActive
-                      ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/40"
-                      : "text-white/50 hover:text-white/80 hover:bg-white/8"
+                      ? "bg-indigo-500/12 text-indigo-600 border border-indigo-500/30"
+                      : "text-text-secondary hover:text-text-primary hover:bg-bg-hover"
                   )}
                 >
                   <Icon className="w-4 h-4" />
                   <span className="hidden sm:block">{tab.label}</span>
                   {tab.id === "ideas" && ideas.length > 0 && (
-                    <span className="ml-1 w-5 h-5 flex items-center justify-center rounded-full bg-indigo-500/30 text-indigo-300 text-[10px] font-bold">
+                    <span className="ml-1 w-5 h-5 flex items-center justify-center rounded-full bg-indigo-500/15 text-indigo-600 text-[10px] font-bold">
                       {ideas.length}
                     </span>
                   )}

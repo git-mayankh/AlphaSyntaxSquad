@@ -98,14 +98,14 @@ function AuthPageInner() {
       <div className="min-h-screen bg-bg-base flex items-center justify-center">
         <div className="glass-card p-12 rounded-2xl text-center max-w-sm w-full mx-4">
           <div className="w-14 h-14 bg-indigo-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Mail className="w-7 h-7 text-indigo-400" />
+            <Mail className="w-7 h-7 text-indigo-500" />
           </div>
-          <h2 className="font-display text-2xl font-bold text-white mb-2">Confirm your email</h2>
+          <h2 className="font-display text-2xl font-bold text-text-primary mb-2">Confirm your email</h2>
           <p className="text-text-secondary text-sm mb-6">
-            We sent an email to <strong className="text-white">{email}</strong>.<br />
+            We sent an email to <strong className="text-text-primary">{email}</strong>.<br />
             Click the link in the email to activate your account.
           </p>
-          <button onClick={() => { setConfirmationSent(false); setActiveTab("signin"); }} className="text-indigo-400 text-sm hover:text-indigo-300 transition-colors">
+          <button onClick={() => { setConfirmationSent(false); setActiveTab("signin"); }} className="text-indigo-500 text-sm hover:text-indigo-600 transition-colors">
             Back to Sign In
           </button>
         </div>
@@ -134,13 +134,13 @@ function AuthPageInner() {
               initial={{ y: 20, opacity: 0, rotate: -2 }}
               animate={{ y: 0, opacity: 1, rotate: -2 }}
               transition={{ delay: 0.1 }}
-              className="absolute left-0 top-0 w-[300px] glass-card p-4 rounded-xl -rotate-2 hover:z-20 hover:rotate-0 hover:scale-105 transition-all duration-300"
+              className="absolute left-0 top-0 w-[300px] bg-white/90 backdrop-blur-md border border-white/50 shadow-lg p-4 rounded-xl -rotate-2 hover:z-20 hover:rotate-0 hover:scale-105 transition-all duration-300"
             >
               <div className="flex items-center gap-3 mb-2">
                 <Avatar name="Alex Rivera" size="sm" />
-                <span className="font-semibold text-text-primary text-[13px]">Alex Rivera</span>
+                <span className="font-semibold text-gray-900 text-[13px]">Alex Rivera</span>
               </div>
-              <p className="text-text-secondary text-xs leading-relaxed">
+              <p className="text-gray-600 text-xs leading-relaxed">
                 "We shaved weeks off our initial feature planning. The real-time voting changed everything."
               </p>
             </motion.div>
@@ -149,13 +149,13 @@ function AuthPageInner() {
               initial={{ y: 20, opacity: 0, rotate: 0 }}
               animate={{ y: 0, opacity: 1, rotate: 0 }}
               transition={{ delay: 0.2 }}
-              className="absolute left-12 top-16 w-[300px] bg-bg-elevated border border-border-default shadow-[var(--shadow-modal)] p-4 rounded-xl z-10 hover:z-20 hover:scale-105 transition-all duration-300"
+              className="absolute left-12 top-16 w-[300px] bg-white border border-gray-200 shadow-xl p-4 rounded-xl z-10 hover:z-20 hover:scale-105 transition-all duration-300"
             >
               <div className="flex items-center gap-3 mb-2">
                 <Avatar name="Priya Patel" size="sm" />
-                <span className="font-semibold text-white text-[13px]">Priya Patel</span>
+                <span className="font-semibold text-gray-900 text-[13px]">Priya Patel</span>
               </div>
-              <p className="text-text-secondary text-xs leading-relaxed">
+              <p className="text-gray-600 text-xs leading-relaxed">
                 "The AI co-pilot suggested a direction we hadn't even considered. It's like having a brilliant extra team member."
               </p>
             </motion.div>
@@ -164,13 +164,13 @@ function AuthPageInner() {
               initial={{ y: 20, opacity: 0, rotate: 2 }}
               animate={{ y: 0, opacity: 1, rotate: 2 }}
               transition={{ delay: 0.3 }}
-              className="absolute left-24 top-32 w-[300px] glass-card p-4 rounded-xl rotate-2 hover:z-20 hover:rotate-0 hover:scale-105 transition-all duration-300"
+              className="absolute left-24 top-32 w-[300px] bg-white/90 backdrop-blur-md border border-white/50 shadow-lg p-4 rounded-xl rotate-2 hover:z-20 hover:rotate-0 hover:scale-105 transition-all duration-300"
             >
               <div className="flex items-center gap-3 mb-2">
                 <Avatar name="Jordan Lee" size="sm" />
-                <span className="font-semibold text-text-primary text-[13px]">Jordan Lee</span>
+                <span className="font-semibold text-gray-900 text-[13px]">Jordan Lee</span>
               </div>
-              <p className="text-text-secondary text-xs leading-relaxed">
+              <p className="text-gray-600 text-xs leading-relaxed">
                 "Finally, a brainstorming tool that actually feels fast. The keyboard shortcuts are a lifesaver."
               </p>
             </motion.div>
@@ -184,7 +184,7 @@ function AuthPageInner() {
           
           <div className="flex items-center justify-center gap-2 mb-8">
             <Zap className="w-6 h-6 text-indigo-500 fill-indigo-500" />
-            <span className="font-display font-bold text-2xl text-white tracking-tight">IdeaForge</span>
+            <span className="font-display font-bold text-2xl text-text-primary tracking-tight">IdeaForge</span>
           </div>
 
           <div className="flex items-center p-1 bg-bg-surface rounded-full mb-8 relative border border-border-subtle">
@@ -244,7 +244,7 @@ function AuthPageInner() {
                       />
                       <div className="flex justify-between items-center mt-1 px-1">
                         <span />
-                        <Link href="#" className="text-[13px] text-indigo-400 font-medium hover:text-indigo-300 transition-colors">
+                        <Link href="#" className="text-[13px] text-indigo-500 font-medium hover:text-indigo-600 transition-colors">
                           Forgot password?
                         </Link>
                       </div>

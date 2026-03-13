@@ -208,11 +208,11 @@ export const CreateIdeaModal = ({ isOpen, onClose, sessionId }: CreateIdeaModalP
               <div className="flex-1 bg-bg-surface border border-border-default rounded-2xl overflow-hidden flex flex-col shadow-[var(--shadow-card)]">
                 {/* TIPTAP TOOLBAR */}
                 <div className="flex items-center gap-1 p-2 border-b border-border-default bg-bg-elevated">
-                  <button onClick={() => editor?.chain().focus().toggleBold().run()} className={cn("p-2 rounded hover:bg-bg-hover transition-colors", editor?.isActive('bold') && 'bg-bg-hover text-white')}><Bold className="w-4 h-4" /></button>
-                  <button onClick={() => editor?.chain().focus().toggleItalic().run()} className={cn("p-2 rounded hover:bg-bg-hover transition-colors", editor?.isActive('italic') && 'bg-bg-hover text-white')}><Italic className="w-4 h-4" /></button>
+                  <button onClick={() => editor?.chain().focus().toggleBold().run()} className={cn("p-2 rounded hover:bg-bg-hover transition-colors", editor?.isActive('bold') && 'bg-bg-hover text-indigo-600')}><Bold className="w-4 h-4" /></button>
+                  <button onClick={() => editor?.chain().focus().toggleItalic().run()} className={cn("p-2 rounded hover:bg-bg-hover transition-colors", editor?.isActive('italic') && 'bg-bg-hover text-indigo-600')}><Italic className="w-4 h-4" /></button>
                   <div className="w-px h-4 bg-border-strong mx-1" />
-                  <button onClick={() => editor?.chain().focus().toggleBulletList().run()} className={cn("p-2 rounded hover:bg-bg-hover transition-colors", editor?.isActive('bulletList') && 'bg-bg-hover text-white')}><List className="w-4 h-4" /></button>
-                  <button onClick={() => editor?.chain().focus().toggleOrderedList().run()} className={cn("p-2 rounded hover:bg-bg-hover transition-colors", editor?.isActive('orderedList') && 'bg-bg-hover text-white')}><ListOrdered className="w-4 h-4" /></button>
+                  <button onClick={() => editor?.chain().focus().toggleBulletList().run()} className={cn("p-2 rounded hover:bg-bg-hover transition-colors", editor?.isActive('bulletList') && 'bg-bg-hover text-indigo-600')}><List className="w-4 h-4" /></button>
+                  <button onClick={() => editor?.chain().focus().toggleOrderedList().run()} className={cn("p-2 rounded hover:bg-bg-hover transition-colors", editor?.isActive('orderedList') && 'bg-bg-hover text-indigo-600')}><ListOrdered className="w-4 h-4" /></button>
                 </div>
                 
                 {/* EDITOR CONTENT */}

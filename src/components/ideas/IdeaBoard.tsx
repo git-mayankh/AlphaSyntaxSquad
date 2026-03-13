@@ -23,7 +23,7 @@ export const IdeaBoard = ({ ideas }: IdeaBoardProps) => {
             </svg>
           </div>
         </motion.div>
-        <h2 className="font-display text-[22px] font-bold text-white mb-2">No ideas yet — be the first!</h2>
+        <h2 className="font-display text-[22px] font-bold text-text-primary mb-2">No ideas yet — be the first!</h2>
         <p className="text-text-secondary text-[15px] mb-8">Add an idea or let AI generate some to get started.</p>
         <div className="flex gap-4">
           <button className="px-6 py-2.5 bg-indigo-500 text-white rounded-full font-semibold font-display shadow-glow-indigo">

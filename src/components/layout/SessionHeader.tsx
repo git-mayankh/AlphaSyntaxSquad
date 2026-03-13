@@ -60,7 +60,7 @@ export const SessionHeader = ({ onToggleAi }: SessionHeaderProps) => {
 
         <div className="hidden sm:block w-px h-6 bg-border-subtle mx-1" />
 
-        <button onClick={onToggleAi} className="hidden sm:flex items-center gap-1.5 px-4 h-8 rounded-full bg-indigo-500/15 border border-indigo-500/30 text-indigo-400 hover:bg-indigo-500 hover:text-white hover:shadow-glow-indigo transition-all font-medium text-[13px]">
+        <button onClick={onToggleAi} className="hidden sm:flex items-center gap-1.5 px-4 h-8 rounded-full bg-indigo-500/15 border border-indigo-500/30 text-indigo-500 hover:bg-indigo-500 hover:text-white hover:shadow-glow-indigo transition-all font-medium text-[13px]">
           <Sparkles className="w-3.5 h-3.5" />
           AI Assistant
         </button>

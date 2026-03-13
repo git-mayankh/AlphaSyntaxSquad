@@ -193,7 +193,7 @@ export const SessionTopBar = ({
               <div className="bg-bg-base border border-border-subtle rounded-xl p-3 mb-3">
                 <div className="text-[10px] text-text-tertiary font-medium uppercase tracking-widest mb-2">Session Code</div>
                 <div className="flex items-center justify-between gap-3">
-                  <span className="font-mono text-2xl font-bold text-white tracking-[0.25em] select-all">{inviteCode || "——————"}</span>
+                  <span className="font-mono text-2xl font-bold text-text-primary tracking-[0.25em] select-all">{inviteCode || "——————"}</span>
                   <button
                     onClick={copyCode}
                     className="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center hover:bg-indigo-500/30 transition-colors shrink-0"

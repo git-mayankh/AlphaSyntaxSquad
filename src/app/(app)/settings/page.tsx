@@ -66,7 +66,7 @@ export default function SettingsPage() {
           <ArrowLeft className="w-5 h-5 text-text-secondary" />
         </Button>
         <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20">
-          <SettingsIcon className="w-5 h-5 text-indigo-400" />
+          <SettingsIcon className="w-5 h-5 text-indigo-500" />
         </div>
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-text-primary">Settings</h1>
@@ -117,7 +117,7 @@ export default function SettingsPage() {
                 
                 <div className="flex items-center gap-4 p-2">
                   <div className="w-10 h-10 rounded-full bg-indigo-500/10 flex items-center justify-center shrink-0">
-                    <UserRound className="w-5 h-5 text-indigo-400" />
+                    <UserRound className="w-5 h-5 text-indigo-500" />
                   </div>
                   <div className="flex-grow min-w-0">
                     <p className="text-xs font-medium text-text-secondary mb-0.5">Full Name</p>
@@ -129,7 +129,7 @@ export default function SettingsPage() {
 
                 <div className="flex items-center gap-4 p-2">
                   <div className="w-10 h-10 rounded-full bg-indigo-500/10 flex items-center justify-center shrink-0">
-                    <Mail className="w-5 h-5 text-indigo-400" />
+                    <Mail className="w-5 h-5 text-indigo-500" />
                   </div>
                   <div className="flex-grow min-w-0">
                     <p className="text-xs font-medium text-text-secondary mb-0.5">Email Address</p>
@@ -141,7 +141,7 @@ export default function SettingsPage() {
 
                 <div className="flex items-center gap-4 p-2">
                   <div className="w-10 h-10 rounded-full bg-cyan-500/10 flex items-center justify-center shrink-0">
-                    <Calendar className="w-5 h-5 text-cyan-400" />
+                    <Calendar className="w-5 h-5 text-cyan-500" />
                   </div>
                   <div className="flex-grow min-w-0">
                     <p className="text-xs font-medium text-text-secondary mb-0.5">Joined IdeaForge</p>

@@ -120,7 +120,7 @@ export default function Dashboard() {
       {/* HEADER ROW */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-12">
         <div>
-          <h1 className="font-display font-bold text-[32px] text-white tracking-tight mb-2">Workspace Sessions</h1>
+          <h1 className="font-display font-bold text-[32px] text-text-primary tracking-tight mb-2">Workspace Sessions</h1>
           <p className="text-text-secondary">Explore active sessions across your organizations, or dive in and create your own.</p>
         </div>
         <div className="flex items-center gap-3">
@@ -155,9 +155,9 @@ export default function Dashboard() {
       ) : !hasOrgs ? (
         <div className="flex flex-col items-center justify-center py-20 text-center glass-card rounded-2xl max-w-2xl mx-auto border-dashed border-border-default">
           <div className="w-20 h-20 bg-indigo-500/10 border border-indigo-500/20 rounded-full flex items-center justify-center mb-6">
-            <UsersIcon className="w-10 h-10 text-indigo-400" />
+            <UsersIcon className="w-10 h-10 text-indigo-500" />
           </div>
-          <h2 className="font-display font-bold text-xl text-white mb-2">You don't belong to any organizations</h2>
+          <h2 className="font-display font-bold text-xl text-text-primary mb-2">You don't belong to any organizations</h2>
           <p className="text-text-secondary mb-8 max-w-md mx-auto">You need to join or create a team workspace first before you can participate in brainstorming sessions.</p>
           <Button onClick={() => window.location.href = '/dashboard'} icon={<UsersIcon className="w-4 h-4" />}>Go to Dashboard</Button>
         </div>
@@ -169,8 +169,8 @@ export default function Dashboard() {
             return (
               <div key={org.id} className="flex flex-col">
                 <div className="flex items-center justify-between mb-6 pb-4 border-b border-border-default/50">
-                  <h2 className="text-2xl font-display font-bold text-white flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-lg text-indigo-400">
+                  <h2 className="text-2xl font-display font-bold text-text-primary flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-lg text-indigo-500">
                       {org.name[0]?.toUpperCase()}
                     </div>
                     {org.name}

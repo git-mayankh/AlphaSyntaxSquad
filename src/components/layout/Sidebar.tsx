@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Layers, Star, BarChart3, Settings, LogOut } from "lucide-react";
+import { LayoutDashboard, Layers, MessageSquare, Settings, LogOut } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { cn } from "@/lib/utils/cn";
 import { createSupabaseClient } from "@/lib/supabase/client";
@@ -59,13 +59,14 @@ export const Sidebar = () => {
   const navItems = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "My Sessions", href: "/sessions", icon: Layers },
+    { name: "Shared Chat", href: "/shared-chat", icon: MessageSquare },
   ];
 
   const displayName = profile?.name || "Loading...";
   const firstName = displayName.split(" ")[0];
 
   return (
-    <aside className="fixed left-0 top-0 bottom-0 w-[240px] bg-bg-surface border-r border-border-subtle flex flex-col pt-5 pb-5 px-4 z-40">
+    <aside className="fixed left-0 top-0 bottom-0 w-[240px] bg-white/80 backdrop-blur-xl border-r border-border-default flex flex-col pt-5 pb-5 px-4 z-40">
       
       {/* Top Section */}
       <div className="flex items-center gap-3 px-2 mb-6">
@@ -76,12 +77,12 @@ export const Sidebar = () => {
           online 
         />
         <div className="flex flex-col min-w-0">
-          <span className="text-text-secondary text-xs">Welcome back,</span>
+          <span className="text-text-tertiary text-xs">Welcome back,</span>
           <span className="font-display text-[15px] font-semibold text-text-primary leading-tight truncate">{firstName}.</span>
         </div>
       </div>
       
-      <div className="h-px bg-border-subtle w-full mb-6" />
+      <div className="h-px bg-border-default w-full mb-6" />
 
       {/* Nav Items */}
       <nav className="flex-1 flex flex-col gap-1.5">
@@ -96,7 +97,7 @@ export const Sidebar = () => {
               className={cn(
                 "flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
                 isActive 
-                  ? "bg-indigo-500/12 text-indigo-400 border-l-2 border-indigo-500"
+                  ? "bg-indigo-500/10 text-indigo-600 border-l-2 border-indigo-500"
                   : "text-text-secondary hover:bg-bg-hover hover:text-text-primary border-l-2 border-transparent"
               )}
             >
@@ -111,14 +112,14 @@ export const Sidebar = () => {
       <div className="mt-auto flex flex-col gap-1.5">
         <Link
           href="/settings"
-          className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium text-text-secondary hover:bg-bg-hover hover:text-text-primary transition-all duration-200 border-l-2 border-transparent"
+          className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium text-text-secondary hover:bg-bg-hover hover:text-indigo-600 transition-all duration-200 border-l-2 border-transparent"
         >
           <Settings className="w-[18px] h-[18px]" />
           Settings
         </Link>
         <button
           onClick={handleSignOut}
-          className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium text-text-secondary hover:bg-red-500/10 hover:text-red-400 transition-all duration-200 w-full text-left border-l-2 border-transparent"
+          className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium text-text-secondary hover:bg-red-50 hover:text-red-500 transition-all duration-200 w-full text-left border-l-2 border-transparent"
         >
           <LogOut className="w-[18px] h-[18px]" />
           Sign Out
