@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { ChevronUp, MessageCircle, MoreHorizontal, Smile, Maximize2, Sparkles, CheckCircle2 } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { ChevronUp, MessageCircle, MoreHorizontal, Sparkles, Trash2, Star, GripVertical } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Dropdown } from "@/components/ui/Dropdown";
 import { motion, AnimatePresence } from "framer-motion";
@@ -27,6 +27,7 @@ export interface IdeaCardProps {
   source?: "user" | "ai" | "voice";
   scores?: { feasibility: number | null; market: number | null; innovation: number | null };
   hasVoted?: boolean;
+  colorVariant?: number; // 0-7 for different sticky note colors
   onVote?: () => void;
   onComment?: () => void;
   onEvaluate?: () => void;
@@ -34,285 +35,276 @@ export interface IdeaCardProps {
   onExport?: () => void;
 }
 
+// Sticky note color palettes — warm light tones
+const STICKY_COLORS = [
+  { bg: "#fef9c3", border: "#fde047", accent: "#854d0e", headerBg: "#fde047" },  // Yellow
+  { bg: "#fce7f3", border: "#f9a8d4", accent: "#9d174d", headerBg: "#fbcfe8" },  // Pink
+  { bg: "#dbeafe", border: "#93c5fd", accent: "#1e40af", headerBg: "#bfdbfe" },  // Blue
+  { bg: "#d1fae5", border: "#6ee7b7", accent: "#065f46", headerBg: "#a7f3d0" },  // Green
+  { bg: "#ede9fe", border: "#c4b5fd", accent: "#4c1d95", headerBg: "#ddd6fe" },  // Purple
+  { bg: "#ffedd5", border: "#fdba74", accent: "#7c2d12", headerBg: "#fed7aa" },  // Orange
+  { bg: "#e0f2fe", border: "#7dd3fc", accent: "#0c4a6e", headerBg: "#bae6fd" },  // Sky
+  { bg: "#fdf2f8", border: "#f0abfc", accent: "#701a75", headerBg: "#f5d0fe" },  // Fuchsia
+];
+
 export const IdeaCard = ({
-  id, category, status, title, description, tags, author, timeAgo, 
-  votes, comments, reactions, userReaction, isAiGenerated, source = "user", scores, hasVoted: initialVoted = false,
+  id, category, status, title, description, tags, author, timeAgo,
+  votes, comments, reactions, userReaction, isAiGenerated, source = "user", scores, 
+  hasVoted: initialVoted = false, colorVariant = 0,
   onComment, onEvaluate, onTimeline, onExport
 }: IdeaCardProps) => {
 
   const [hasVoted, setHasVoted] = useState(initialVoted);
   const [voteCount, setVoteCount] = useState(votes);
+  const [showEmojis, setShowEmojis] = useState(false);
   const supabase = createSupabaseClient();
+
+  useEffect(() => {
+    setHasVoted(initialVoted);
+    setVoteCount(votes);
+  }, [initialVoted, votes]);
+
+  const color = STICKY_COLORS[colorVariant % STICKY_COLORS.length];
+  const hasScores = scores && (scores.feasibility || scores.market || scores.innovation);
+  const avgScore = hasScores ? Math.round(((scores.feasibility || 0) + (scores.market || 0) + (scores.innovation || 0)) / 3) : null;
 
   const handleVote = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    
+    // Cache rect synchronously BEFORE any awaits — currentTarget becomes null after async ops
+    const rect = e.currentTarget.getBoundingClientRect();
+
     const { data: userData } = await supabase.auth.getUser();
     if (!userData?.user) {
-      toast.error("Sign in to vote and comment.");
+      toast.error("Sign in to vote.");
       return;
     }
 
     if (!hasVoted) {
       setHasVoted(true);
       setVoteCount(c => c + 1);
-      
-      // Fire particles
-      const rect = e.currentTarget.getBoundingClientRect();
-      const x = (rect.left + rect.width / 2) / window.innerWidth;
-      const y = (rect.top + rect.height / 2) / window.innerHeight;
-      
       confetti({
-        particleCount: 8,
+        particleCount: 10,
         spread: 360,
-        startVelocity: 15,
-        colors: ['#4ADE80', '#22c55e'],
-        ticks: 30,
-        origin: { x, y }
+        startVelocity: 18,
+        colors: ['#4ADE80', '#22c55e', '#bbf7d0'],
+        ticks: 35,
+        origin: { x: (rect.left + rect.width / 2) / window.innerWidth, y: (rect.top + rect.height / 2) / window.innerHeight }
       });
-      
-      toast("✓ Voted!", {
-        position: "bottom-center",
-        className: "!border-l-green-400 font-medium",
-      });
-      
-      await supabase.from("idea_votes").insert({ idea_id: id, user_id: userData.user.id });
+      toast.success("✓ Upvoted!", { position: "bottom-center" });
+      const { error } = await supabase.from("idea_votes").insert({ idea_id: id, user_id: userData.user.id });
+      if (error) {
+        console.error("Vote insert failed:", error);
+        setHasVoted(false);
+        setVoteCount(c => c - 1);
+        toast.error("Vote failed: " + error.message);
+      }
     } else {
       setHasVoted(false);
       setVoteCount(c => c - 1);
-      await supabase.from("idea_votes").delete().match({ idea_id: id, user_id: userData.user.id });
+      const { error } = await supabase.from("idea_votes").delete().match({ idea_id: id, user_id: userData.user.id });
+      if (error) {
+        console.error("Vote delete failed:", error);
+        setHasVoted(true);
+        setVoteCount(c => c + 1);
+      }
     }
   };
 
   const handleReact = async (e: React.MouseEvent, emoji: string) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    // Cache the rect synchronously because e.currentTarget becomes null after await
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = (rect.left + rect.width / 2) / window.innerWidth;
-    const y = (rect.top + rect.height / 2) / window.innerHeight;
-    
+    setShowEmojis(false);
     const { data: userData } = await supabase.auth.getUser();
-    if (!userData?.user) {
-      toast.error("Sign in to react.");
-      return;
-    }
-
-    const { error } = await supabase.from("idea_reactions").insert({
-      idea_id: id,
-      user_id: userData.user.id,
-      emoji
-    });
-    
-    // If error (unique constraint violation), user already reacted -> delete it (toggle)
+    if (!userData?.user) return;
+    // Try insert; if it fails (duplicate), remove instead (toggle)
+    const { error } = await supabase.from("idea_reactions").insert({ idea_id: id, user_id: userData.user.id, emoji });
     if (error) {
-      await supabase.from("idea_reactions").delete().match({
-        idea_id: id,
-        user_id: userData.user.id,
-        emoji
-      });
-    } else {
-      // Small particle effect for reaction
-      confetti({
-        particleCount: 5,
-        spread: 40,
-        startVelocity: 10,
-        colors: ['#F472B6', '#FBBF24'],
-        ticks: 20,
-        origin: { x, y }
-      });
+      void supabase.from("idea_reactions").delete().match({ idea_id: id, user_id: userData.user.id, emoji });
     }
   };
 
   const menuItems = [
     [
-      { label: "Evaluate Idea", onClick: onEvaluate || (() => {}) },
-      { label: "View Timeline", onClick: onTimeline || (() => {}) },
-      { label: "Export to PDF", onClick: onExport || (() => {}) },
-      { label: "Edit Idea", onClick: () => {} }, 
-      { label: "Shortlist", onClick: () => {} }
+      { label: "✦ Evaluate", onClick: onEvaluate || (() => {}) },
+      { label: "⏱ Timeline", onClick: onTimeline || (() => {}) },
+      { label: "⬆ Export", onClick: onExport || (() => {}) },
     ],
-    [{ label: "Delete", onClick: () => {}, danger: true }]
+    [{ label: "🗑 Delete", onClick: () => {}, danger: true }]
   ];
-  
-  const hasScores = scores && (scores.feasibility || scores.market || scores.innovation);
-  const avgScore = hasScores ? Math.round(((scores.feasibility || 0) + (scores.market || 0) + (scores.innovation || 0)) / 3) : null;
 
   return (
-    <div className="glass-card rounded-[24px] overflow-hidden group pb-0 relative break-inside-avoid mb-6 transition-[transform,shadow,border] duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:-translate-y-[6px] hover:border-border-strong hover:shadow-[0_16px_48px_rgba(0,0,0,0.4)]">
-      
-      {/* Quick expand glow */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.03)_0%,transparent_60%)] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-      
-      {/* Expand Icon */}
-      <div className="absolute top-4 right-14 opacity-0 group-hover:opacity-100 transition-opacity p-2 text-text-tertiary">
-        <Maximize2 className="w-3.5 h-3.5" />
+    <div
+      className="relative rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.13)] group select-none overflow-visible"
+      style={{ backgroundColor: color.bg, border: `1.5px solid ${color.border}` }}
+    >
+      {/* Sticky Note header tape/fold accent */}
+      <div
+        className="h-[6px] w-full rounded-t-2xl"
+        style={{ backgroundColor: color.headerBg }}
+      />
+
+      {/* Drag handle (decorative) */}
+      <div className="absolute top-2.5 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-40 transition-opacity text-gray-500">
+        <GripVertical className="w-4 h-4" />
       </div>
 
-      {/* TOP STRIPE */}
-      <div className="h-1 w-full" style={{ backgroundColor: category.color }} />
-
       {/* HEADER */}
-      <div className="px-5 pt-4">
-        <div className="flex items-center justify-between">
-          <div 
-            className="text-[12px] uppercase tracking-[0.06em] font-semibold px-2 py-0.5 rounded-full"
-            style={{ backgroundColor: `${category.color}26`, color: category.color }}
+      <div className="px-4 pt-3 pb-2 flex items-start justify-between">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span
+            className="text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full"
+            style={{ backgroundColor: `${color.border}60`, color: color.accent }}
           >
             {category.name}
-          </div>
-          
-          <Dropdown
-            align="right"
-            items={menuItems}
-            trigger={
-              <button className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-text-tertiary hover:text-text-primary hover:bg-bg-hover rounded-full">
-                <MoreHorizontal className="w-4 h-4" />
-              </button>
-            }
-          />
+          </span>
+          {source === "ai" && (
+            <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide bg-violet-100 text-violet-700 border border-violet-200 px-1.5 py-0.5 rounded-full">
+              <Sparkles className="w-2.5 h-2.5" /> AI
+            </span>
+          )}
+          {source === "voice" && (
+            <span className="text-[10px] font-bold uppercase bg-blue-100 text-blue-700 border border-blue-200 px-1.5 py-0.5 rounded-full">🎙 Voice</span>
+          )}
+          {status === "shortlisted" && (
+            <span className="text-[10px] font-bold bg-amber-100 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded-full">⭐ Shortlisted</span>
+          )}
+          {status === "selected" && (
+            <span className="text-[10px] font-bold bg-green-100 text-green-700 border border-green-200 px-1.5 py-0.5 rounded-full">✓ Selected</span>
+          )}
         </div>
 
-        {status !== "open" && (
-          <div className="mt-2.5 flex">
-            {status === "shortlisted" && <span className="text-[11px] font-bold bg-amber-500/15 text-amber-500 px-2 py-0.5 rounded-full">⭐ Shortlisted</span>}
-            {status === "selected" && <span className="text-[11px] font-bold bg-green-500/15 text-green-500 px-2 py-0.5 rounded-full">✓ Selected</span>}
-          </div>
-        )}
+        <Dropdown
+          align="right"
+          items={menuItems}
+          trigger={
+            <button className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-gray-400 hover:text-gray-700 hover:bg-black/5 rounded-full">
+              <MoreHorizontal className="w-4 h-4" />
+            </button>
+          }
+        />
       </div>
 
       {/* BODY */}
-      <div className="px-5 pt-4 pb-4 border-b border-transparent group-hover:border-border-subtle/50 transition-colors">
-        <h3 className="font-display font-bold text-[16px] text-text-primary leading-tight line-clamp-2">
+      <div className="px-4 pb-3">
+        <h3
+          className="font-bold text-[15px] leading-snug mb-1.5 line-clamp-2"
+          style={{ color: color.accent }}
+        >
           {title}
         </h3>
-        
-        <p className="mt-2 text-[14px] text-text-secondary leading-relaxed line-clamp-3">
-          {description}
-          {description.length > 100 && <span className="inline-block text-indigo-400 hover:text-indigo-300 ml-1 cursor-pointer">... more</span>}
+        <p className="text-[13px] leading-relaxed line-clamp-3" style={{ color: `${color.accent}aa` }}>
+          {description || "No description."}
         </p>
 
-        <div className="flex flex-wrap gap-1.5 mt-3">
-          {tags.map(tag => (
-            <span key={tag} className="text-[11px] font-medium bg-bg-elevated text-text-tertiary px-2.5 py-0.5 rounded-full hover:text-text-primary hover:border-border-default border border-transparent transition-colors cursor-pointer">
-              {tag}
-            </span>
-          ))}
-        </div>
-      </div>
+        {tags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-2.5">
+            {tags.map(tag => (
+              <span
+                key={tag}
+                className="text-[11px] px-2 py-0.5 rounded-full font-medium"
+                style={{ backgroundColor: `${color.border}55`, color: color.accent }}
+              >
+                #{tag}
+              </span>
+            ))}
+          </div>
+        )}
 
-      {/* AI BADGE OVERLAY & SCORE OVERLAY */}
-      <div className="mx-5 mb-1 flex items-center gap-2">
-            {source === "voice" && (
-              <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-indigo-500/10 text-indigo-400 text-[10px] font-bold tracking-wide uppercase border border-indigo-500/20 backdrop-blur-sm self-start">
-                <Sparkles className="w-3 h-3" />
-                Voice Gen
-              </div>
-            )}
-            
-            {source === "ai" && (
-              <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-purple-500/10 text-purple-400 text-[10px] font-bold tracking-wide uppercase border border-purple-500/20 backdrop-blur-sm self-start">
-                <Sparkles className="w-3 h-3" />
-                AI Generated
-              </div>
-            )}
-
-            {(isAiGenerated && source !== "ai" && source !== "voice") && (
-              <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-indigo-500/10 text-indigo-400 text-[10px] font-bold tracking-wide uppercase border border-indigo-500/20 backdrop-blur-sm self-start">
-                <Sparkles className="w-3 h-3" />
-                AI Assist
-              </div>
-            )}
-        {hasScores && (
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-500/10 border border-green-500/20 text-green-400 text-[11px] font-medium rounded-full" title={`Feas: ${scores.feasibility}, Mkt: ${scores.market}, Inn: ${scores.innovation}`}>
-            ★ {avgScore}/10 Score
+        {avgScore !== null && (
+          <div
+            className="mt-2 inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full"
+            style={{ backgroundColor: `${color.border}55`, color: color.accent }}
+          >
+            <Star className="w-3 h-3" fill={color.accent} /> {avgScore}/10 Score
           </div>
         )}
       </div>
 
       {/* FOOTER */}
-      <div className="px-5 py-3 border-t border-border-subtle flex items-center justify-between bg-bg-surface/30">
-        
+      <div
+        className="px-4 py-2.5 rounded-b-2xl flex items-center justify-between"
+        style={{ backgroundColor: `${color.headerBg}70`, borderTop: `1px solid ${color.border}80` }}
+      >
         <div className="flex items-center gap-2">
           <Avatar name={author.name} src={author.avatar} size="sm" />
-          <div className="flex items-center gap-1.5 text-[12px]">
-            <span className="font-medium text-text-secondary">{author.name.split(" ")[0]}</span>
-            <span className="text-text-tertiary">·</span>
-            <span className="text-text-tertiary">{timeAgo}</span>
-          </div>
+          <span className="text-[12px] font-medium" style={{ color: `${color.accent}bb` }}>
+            {author.name.split(" ")[0]}
+          </span>
+          <span className="text-[11px]" style={{ color: `${color.accent}66` }}>{timeAgo}</span>
         </div>
 
         <div className="flex items-center gap-1.5">
-          <button 
-            className="flex items-center gap-1 text-text-tertiary hover:text-indigo-400 transition-colors p-1"
-            onClick={(e) => {
-              e.stopPropagation();
-              onComment?.();
-            }}
-          >
-            <MessageCircle className="w-4 h-4" />
-            <span className="text-[13px] font-medium">{comments}</span>
-          </button>
-          
-          <div className="relative flex items-center group/reaction">
-            <button className={cn(
-              "flex items-center gap-1 transition-colors p-1 relative z-10",
-              userReaction ? "text-pink-500" : "text-text-tertiary hover:text-pink-400"
-            )}>
-              {userReaction ? (
-                <span className="text-base leading-none -mt-0.5">{userReaction}</span>
-              ) : (
-                <Smile className="w-4 h-4" />
-              )}
-              {reactions > 0 && <span className="text-[13px] font-medium">{reactions}</span>}
+          {/* Emoji reaction */}
+          <div className="relative">
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowEmojis(v => !v); }}
+              className="text-[14px] p-1 rounded-full hover:bg-black/5 transition-colors"
+              title="React"
+            >
+              {userReaction || "😊"}
+              {reactions > 0 && <span className="text-[11px] ml-0.5" style={{ color: color.accent }}>{reactions}</span>}
             </button>
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 pb-2 opacity-0 pointer-events-none group-hover/reaction:opacity-100 group-hover/reaction:pointer-events-auto transition-all translate-y-2 group-hover/reaction:translate-y-0 z-50">
-              <div className="bg-bg-elevated border border-border-default rounded-full shadow-lg p-1.5 flex items-center gap-1">
-                {['👍', '❤️', '🔥', '🚀'].map(emoji => (
-                  <button 
-                    key={emoji}
-                    onClick={(e) => handleReact(e, emoji)}
-                    className={cn(
-                      "w-7 h-7 flex items-center justify-center rounded-full transition-transform text-base",
-                      userReaction === emoji ? "bg-bg-hover scale-110" : "hover:bg-bg-hover hover:scale-125"
-                    )}
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <AnimatePresence>
+              {showEmojis && (
+                <motion.div
+                  initial={{ opacity: 0, y: 6, scale: 0.9 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 6, scale: 0.9 }}
+                  className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-white rounded-full shadow-xl border border-gray-100 p-1.5 flex items-center gap-1 z-50"
+                >
+                  {["👍", "❤️", "🔥", "🚀", "💡"].map(emoji => (
+                    <button
+                      key={emoji}
+                      onClick={(e) => handleReact(e, emoji)}
+                      className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 transition-transform hover:scale-125 text-base"
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
+          {/* Comment */}
+          <button
+            onClick={(e) => { e.stopPropagation(); onComment?.(); }}
+            className="flex items-center gap-1 p-1 rounded-full hover:bg-black/5 transition-colors"
+            style={{ color: `${color.accent}88` }}
+            title="Comment"
+          >
+            <MessageCircle className="w-4 h-4" />
+            {comments > 0 && <span className="text-[11px]">{comments}</span>}
+          </button>
+
+          {/* Vote */}
           <motion.button
-            whileTap={{ scale: 1.05 }}
+            whileTap={{ scale: 1.1 }}
             onClick={handleVote}
             className={cn(
-              "flex items-center gap-1.5 px-2.5 py-1 rounded-full border transition-all duration-300 relative overflow-hidden",
-              hasVoted 
-                ? "bg-green-400/12 border-green-400/30 text-green-400" 
-                : "bg-transparent border-border-subtle text-text-tertiary hover:border-border-default hover:text-text-primary"
+              "flex items-center gap-1 px-2 py-1 rounded-full border font-bold text-[12px] transition-all",
+              hasVoted
+                ? "border-green-400 bg-green-50 text-green-700"
+                : "border-transparent hover:border-current bg-black/5"
             )}
+            style={!hasVoted ? { color: color.accent } : {}}
+            title="Upvote"
           >
-            <motion.div animate={hasVoted ? { scale: [1, 1.4, 1] } : {}} transition={{ type: "spring", stiffness: 300, damping: 15 }}>
-              <ChevronUp className={cn("w-4 h-4", hasVoted && "fill-green-400")} strokeWidth={hasVoted ? 3 : 2} />
+            <motion.div animate={hasVoted ? { scale: [1, 1.4, 1] } : { scale: 1 }} transition={{ duration: 0.3, ease: "easeInOut" }}>
+              <ChevronUp className="w-4 h-4" strokeWidth={hasVoted ? 3 : 2} />
             </motion.div>
-            <div className="font-display font-bold text-[14px] leading-none relative h-[14px] w-[18px] overflow-hidden">
-              <AnimatePresence mode="popLayout" initial={false}>
-                <motion.span
-                  key={voteCount}
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  exit={{ y: -20, opacity: 0 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                  className="absolute inset-0 flex items-center justify-center"
-                >
-                  {voteCount}
-                </motion.span>
-              </AnimatePresence>
-            </div>
+            <AnimatePresence mode="popLayout" initial={false}>
+              <motion.span
+                key={voteCount}
+                initial={{ y: 6, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: -6, opacity: 0 }}
+                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+              >
+                {voteCount}
+              </motion.span>
+            </AnimatePresence>
           </motion.button>
         </div>
       </div>

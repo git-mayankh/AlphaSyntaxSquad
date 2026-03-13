@@ -75,12 +75,39 @@ export const SessionTopBar = ({
         });
     };
 
+    // Also fetch all distinct contributors (idea authors + message authors) from DB as a reliable count
+    const fetchSessionParticipants = async () => {
+      const { data: ideaAuthors } = await supabase
+        .from("ideas")
+        .select("author_id, author:profiles!ideas_author_id_fkey(id, name, avatar_url)")
+        .eq("session_id", sessionId)
+        .not("author_id", "is", null);
+
+      const { data: msgAuthors } = await supabase
+        .from("messages")
+        .select("author_id, author:profiles!messages_author_id_fkey(id, name, avatar_url)")
+        .eq("session_id", sessionId);
+
+      const allAuthors = new Map<string, Participant>();
+      [...(ideaAuthors || []), ...(msgAuthors || [])].forEach((row: any) => {
+        const profile = Array.isArray(row.author) ? row.author[0] : row.author;
+        if (profile?.id && !allAuthors.has(profile.id)) {
+          allAuthors.set(profile.id, { id: profile.id, name: profile.name || "Unknown", avatar_url: profile.avatar_url });
+        }
+      });
+
+      // Use DB participants as baseline if presence hasn't loaded yet
+      setParticipants(prev => prev.length > 0 ? prev : Array.from(allAuthors.values()));
+    };
+
     setupPresence();
+    fetchSessionParticipants();
 
     return () => {
       if (channel) supabase.removeChannel(channel);
     };
-  }, [sessionId, supabase]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId]);
 
   const formatTime = (s: number) => {
     const h = Math.floor(s / 3600);
@@ -107,9 +134,9 @@ export const SessionTopBar = ({
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 h-14 bg-bg-surface/95 backdrop-blur-xl border-b border-border-subtle flex items-center px-5 gap-4">
+    <header className="fixed top-0 left-0 right-0 z-50 h-14 bg-white/90 backdrop-blur-xl border-b border-black/8 flex items-center px-5 gap-4 shadow-sm">
       {/* Logo */}
-      <NextLink href="/dashboard" className="flex items-center gap-2 text-text-tertiary hover:text-text-primary transition-colors">
+      <NextLink href="/dashboard" className="flex items-center gap-2 text-gray-400 hover:text-gray-700 transition-colors">
         <Zap className="w-5 h-5 text-indigo-500 fill-indigo-500" />
       </NextLink>
 
@@ -117,12 +144,12 @@ export const SessionTopBar = ({
 
       {/* Session Title */}
       <div className="flex items-center gap-2">
-        <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-        <h1 className="font-display font-semibold text-text-primary text-[15px] truncate max-w-[180px]">{sessionTitle}</h1>
+        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+        <h1 className="font-display font-semibold text-gray-900 text-[15px] truncate max-w-[200px]">{sessionTitle}</h1>
       </div>
 
       {/* Timer */}
-      <div className="flex items-center gap-1.5 text-text-tertiary bg-bg-base border border-border-subtle rounded-md px-2.5 py-1 font-mono text-xs font-semibold tracking-widest">
+      <div className="flex items-center gap-1.5 text-gray-500 bg-gray-100 border border-gray-200 rounded-md px-2.5 py-1 font-mono text-xs font-semibold tracking-widest">
         <Timer className="w-3 h-3" />
         {formatTime(elapsed)}
       </div>
@@ -166,7 +193,7 @@ export const SessionTopBar = ({
               <div className="bg-bg-base border border-border-subtle rounded-xl p-3 mb-3">
                 <div className="text-[10px] text-text-tertiary font-medium uppercase tracking-widest mb-2">Session Code</div>
                 <div className="flex items-center justify-between gap-3">
-                  <span className="font-mono text-2xl font-bold text-white tracking-[0.25em] select-all">{inviteCode || "——————"}</span>
+                  <span className="font-mono text-2xl font-bold text-text-primary tracking-[0.25em] select-all">{inviteCode || "——————"}</span>
                   <button
                     onClick={copyCode}
                     className="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center hover:bg-indigo-500/30 transition-colors shrink-0"
@@ -200,7 +227,7 @@ export const SessionTopBar = ({
             <Avatar name={p.name} src={p.avatar_url} size="sm" online />
           </div>
         ))}
-        <div className="flex items-center gap-1 text-text-secondary text-xs ml-2">
+        <div className="flex items-center gap-1 text-gray-500 text-xs ml-2">
           <Users className="w-3.5 h-3.5" />
           {participants.length}
         </div>
@@ -214,8 +241,8 @@ export const SessionTopBar = ({
         whileTap={{ scale: 0.95 }}
         className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
           isVoiceActive
-            ? "bg-green-500/15 text-green-400 border border-green-500/40 shadow-[0_0_12px_rgba(74,222,128,0.2)]"
-            : "text-text-secondary hover:text-text-primary hover:bg-bg-hover border border-transparent"
+            ? "bg-green-100 text-green-700 border border-green-300"
+            : "text-gray-500 hover:text-gray-800 hover:bg-gray-100 border border-transparent"
         }`}
       >
         {isVoiceActive ? (
@@ -223,9 +250,9 @@ export const SessionTopBar = ({
             <Mic className="w-4 h-4" />
             <span className="flex gap-0.5 items-center">
               {[0, 1, 2].map(i => (
-                <motion.span key={i} className="block w-0.5 rounded-full bg-green-400"
-                  animate={{ height: ["4px", "10px", "4px"] }}
-                  transition={{ repeat: Infinity, duration: 0.8, delay: i * 0.15 }} />
+                <motion.span key={i} className="block w-0.5 rounded-full bg-green-500"
+                  animate={{ height: ["4px", "12px", "4px"] }}
+                  transition={{ repeat: Infinity, duration: 0.8, delay: i * 0.15, ease: "easeInOut" }} />
               ))}
             </span>
             In Room
@@ -235,19 +262,6 @@ export const SessionTopBar = ({
         )}
       </motion.button>
 
-      {/* AI Button */}
-      <motion.button
-        onClick={onToggleAi}
-        whileTap={{ scale: 0.95 }}
-        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-          isAiOpen
-            ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/40"
-            : "bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 border border-indigo-500/20"
-        }`}
-      >
-        <Brain className="w-4 h-4" />
-        AI
-      </motion.button>
     </header>
   );
 };

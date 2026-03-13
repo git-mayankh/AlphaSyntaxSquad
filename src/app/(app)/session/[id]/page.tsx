@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState, useCallback, useMemo, useRef } from "react";
+import { use, useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { IdeaCanvas } from "@/components/ideas/IdeaCanvas";
 import { IdeaCardProps } from "@/components/ideas/IdeaCard";
@@ -15,33 +15,117 @@ import { ChatPanel } from "@/components/session/ChatPanel";
 import { VoiceTranscriptTab } from "@/components/session/VoiceTranscriptTab";
 import { useIdeas } from "@/hooks/useIdeas";
 import { useSessionData } from "@/hooks/useSessionData";
+import { useIdeaClusters } from "@/hooks/useIdeaClusters";
 import { createSupabaseClient } from "@/lib/supabase/client";
-import { Loader2, Plus, MessageCircle, Brain, Sparkles, LayoutList, LayoutGrid, History, Search, TrendingUp, Mic } from "lucide-react";
+import {
+  Loader2, Plus, MessageCircle, Brain, Sparkles, LayoutList,
+  TrendingUp, Mic, StickyNote, Search, X, ChevronUp, Trophy, Send
+} from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { toast } from "sonner";
 
-type RightPanelTab = "chat" | "ai" | "analytics" | "transcript";
+type BottomTab = "ideas" | "chat" | "ai" | "analytics" | "transcript" | "voting";
 
 const categories = [
-  { id: "Core Feature", name: "Core Feature", color: "var(--cat-core)" },
-  { id: "Monetization", name: "Monetization", color: "var(--cat-money)" },
-  { id: "Growth", name: "Growth", color: "var(--cat-growth)" },
-  { id: "Other", name: "Other", color: "var(--cat-other)" },
+  { id: "Core Feature", name: "Core Feature", color: "#6366f1" },
+  { id: "Monetization", name: "Monetization", color: "#10b981" },
+  { id: "Growth", name: "Growth", color: "#f59e0b" },
+  { id: "Other", name: "Other", color: "#8b5cf6" },
 ];
+
+// Inline AI Chat — rendered inside bottom panel (no fixed position)
+function InlineAIChat() {
+  const [msgs, setMsgs] = useState<{id:string; role:"user"|"ai"; text:string}[]>([
+    { id: "welcome", role: "ai", text: "Hi! I'm your AI Catalyst. Ask me to generate ideas, summarize themes, or brainstorm anything!" }
+  ]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [msgs, loading]);
+
+  const send = async () => {
+    if (!input.trim() || loading) return;
+    const userText = input.trim();
+    setMsgs(prev => [...prev, { id: Date.now().toString(), role: "user", text: userText }]);
+    setInput("");
+    setLoading(true);
+    try {
+      const res = await fetch("/api/ai/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: userText }),
+      });
+      const data = await res.json();
+      setMsgs(prev => [...prev, { id: (Date.now()+1).toString(), role: "ai", text: data.text || data.error || "Something went wrong." }]);
+    } catch {
+      setMsgs(prev => [...prev, { id: (Date.now()+1).toString(), role: "ai", text: "Network error. Please try again." }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-full">
+      <div ref={scrollRef} className="flex-1 overflow-auto p-4 space-y-3">
+        {msgs.map(m => (
+          <div key={m.id} className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}>
+            <div className={cn(
+              "max-w-[80%] px-3.5 py-2.5 rounded-2xl text-[13px] leading-relaxed whitespace-pre-wrap",
+              m.role === "user"
+                ? "bg-indigo-500 text-white rounded-tr-sm"
+                : "bg-bg-elevated text-text-primary border border-border-default rounded-tl-sm"
+            )}>
+              {m.role === "ai" && <Sparkles className="w-3.5 h-3.5 text-indigo-500 inline mr-1.5 -mt-0.5" />}
+              {m.text}
+            </div>
+          </div>
+        ))}
+        {loading && (
+          <div className="flex justify-start">
+            <div className="bg-bg-elevated border border-border-default rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-1.5">
+              <motion.div animate={{ y: [0, -3, 0] }} transition={{ repeat: Infinity, duration: 0.5, delay: 0 }} className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+              <motion.div animate={{ y: [0, -3, 0] }} transition={{ repeat: Infinity, duration: 0.5, delay: 0.15 }} className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+              <motion.div animate={{ y: [0, -3, 0] }} transition={{ repeat: Infinity, duration: 0.5, delay: 0.3 }} className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+            </div>
+          </div>
+        )}
+      </div>
+      <div className="p-3 border-t border-border-default">
+        <div className="relative flex items-center">
+          <input
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && !e.shiftKey && send()}
+            placeholder="Ask AI anything about your ideas..."
+            className="w-full bg-bg-elevated border border-border-default rounded-full py-2.5 pl-4 pr-12 text-sm text-text-primary outline-none focus:border-indigo-500/50 placeholder:text-text-disabled transition-colors"
+          />
+          <button
+            onClick={send}
+            disabled={!input.trim() || loading}
+            className="absolute right-1.5 w-8 h-8 rounded-full bg-indigo-500 text-white flex items-center justify-center disabled:opacity-40 hover:bg-indigo-600 transition-colors"
+          >
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 ml-[-1px]" />}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function SessionBoardPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const supabase = createSupabaseClient();
 
-  // Reference to canvas for panning
   const canvasRef = useRef<any>(null);
 
   // UI State
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [rightPanel, setRightPanel] = useState<RightPanelTab>("chat");
-  const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
+  const [activePanel, setActivePanel] = useState<BottomTab | null>(null);
   const [activeCommentIdea, setActiveCommentIdea] = useState<{ id: string; title: string } | null>(null);
-  const [activeEvaluateIdea, setActiveEvaluateIdea] = useState<{ id: string; title: string; scores: any } | null>(null);
+  const [activeEvaluateIdea, setActiveEvaluateIdea] = useState<any>(null);
   const [activeTimelineIdea, setActiveTimelineIdea] = useState<{ id: string; title: string } | null>(null);
 
   // Search & Filter State
@@ -52,11 +136,21 @@ export default function SessionBoardPage({ params }: { params: Promise<{ id: str
   const { data: session, isLoading: isSessionLoading } = useSessionData(id);
   const { data: ideas = [], isLoading: isIdeasLoading } = useIdeas(id);
 
+  // AI clustering — auto-triggered whenever ideas change
+  const { clusters, isAnalyzing, analyzeIdeas } = useIdeaClusters();
+  useEffect(() => {
+    if (ideas.length >= 2) {
+      analyzeIdeas(
+        ideas.map((i: any) => ({ id: i.id, title: i.title, description: i.description || "" }))
+      );
+    }
+  }, [ideas]);
+
   // Filter ideas
   const filteredIdeas = useMemo(() => {
     return ideas.filter((idea: any) => {
-      const matchesSearch = idea.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                           (idea.description && idea.description.toLowerCase().includes(searchQuery.toLowerCase()));
+      const matchesSearch = idea.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (idea.description && idea.description.toLowerCase().includes(searchQuery.toLowerCase()));
       const matchesCat = selectedCategory ? idea.category === selectedCategory : true;
       return matchesSearch && matchesCat;
     });
@@ -65,14 +159,14 @@ export default function SessionBoardPage({ params }: { params: Promise<{ id: str
   const handlePanToIdea = (ideaId: string) => {
     if (canvasRef.current) {
       canvasRef.current.panToIdea(ideaId);
+      setActivePanel(null); // Close panel to reveal canvas
     }
   };
 
-  // Handlers
   const handleCommentOpen = (ideaId: string, title: string) => setActiveCommentIdea({ id: ideaId, title });
   const handleTimelineOpen = (ideaId: string, title: string) => setActiveTimelineIdea({ id: ideaId, title });
   const handleEvaluateOpen = (idea: any) => setActiveEvaluateIdea({
-    id: idea.id, title: idea.title,
+    id: idea.id, title: idea.title, description: idea.description,
     scores: { feasibility: idea.feasibility_score, market: idea.market_score, innovation: idea.innovation_score }
   });
 
@@ -89,7 +183,6 @@ export default function SessionBoardPage({ params }: { params: Promise<{ id: str
     const merged = await res.json();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-
     const { data: newIdea, error } = await supabase.from("ideas").insert({
       session_id: id,
       title: merged.title,
@@ -98,7 +191,6 @@ export default function SessionBoardPage({ params }: { params: Promise<{ id: str
       author_id: user.id,
       is_ai_generated: true,
     }).select().single();
-
     if (!error && newIdea) {
       await supabase.from("idea_history").insert({
         idea_id: newIdea.id,
@@ -119,7 +211,6 @@ export default function SessionBoardPage({ params }: { params: Promise<{ id: str
       author_id: user.id,
       is_ai_generated: true,
     }).select().single();
-
     if (newIdea) {
       await supabase.from("idea_history").insert({
         idea_id: newIdea.id, action_type: "created",
@@ -144,7 +235,7 @@ export default function SessionBoardPage({ params }: { params: Promise<{ id: str
     author: idea.author
       ? { name: idea.author.name || "Unknown", avatar: idea.author.avatar_url || undefined }
       : { name: "Unknown" },
-    timeAgo: new Date(idea.created_at).toLocaleDateString(),
+    timeAgo: new Date(idea.created_at).toLocaleDateString("en", { month: "short", day: "numeric" }),
     votes: idea.votes_count ?? 0,
     comments: idea.comments_count ?? 0,
     reactions: idea.reactions_count ?? 0,
@@ -155,224 +246,306 @@ export default function SessionBoardPage({ params }: { params: Promise<{ id: str
     onEvaluate: () => handleEvaluateOpen(idea),
     onTimeline: () => handleTimelineOpen(idea.id, idea.title),
     onExport: () => window.open(`/session/${id}/export/${idea.id}`, "_blank"),
-    // Canvas position
-    position: idea.position || { x: 100 + (i % 3) * 380, y: 60 + Math.floor(i / 3) * 300 },
+    position: idea.position || { x: 80 + (i % 4) * 340, y: 60 + Math.floor(i / 4) * 300 },
+    colorVariant: i % 8,
   }));
 
   const analyticsIdeas = ideas.map((i: any) => ({
     id: i.id, title: i.title, description: i.description, votes: i.votes_count
   }));
 
-  const rightPanelTabs: { id: RightPanelTab; label: string; icon: React.ElementType }[] = [
-    { id: "chat", label: "Chat", icon: MessageCircle },
-    { id: "ai", label: "AI", icon: Sparkles },
-    { id: "analytics", label: "Analytics", icon: Brain },
+  const votedIdeas = useMemo(() => {
+    return [...ideas]
+      .sort((a: any, b: any) => (b.votes_count ?? 0) - (a.votes_count ?? 0));
+  }, [ideas]);
+
+  const bottomTabs = [
+    { id: "ideas" as BottomTab, label: "Ideas", icon: LayoutList, count: ideas.length },
+    { id: "voting" as BottomTab, label: "Voting", icon: Trophy },
+    { id: "chat" as BottomTab, label: "Chat", icon: MessageCircle },
+    { id: "ai" as BottomTab, label: "AI", icon: Sparkles },
+    { id: "analytics" as BottomTab, label: "Analyze", icon: Brain },
+    { id: "transcript" as BottomTab, label: "Transcript", icon: Mic },
   ];
 
+  const togglePanel = (tab: BottomTab) => {
+    setActivePanel(prev => prev === tab ? null : tab);
+  };
+
+  const panelHeight = "420px";
+
   return (
-    <div className="h-screen w-full bg-bg-base flex flex-col overflow-hidden selection:bg-indigo-500/30">
-      
+    <div className="h-screen w-full flex flex-col overflow-hidden" style={{ backgroundColor: "#f5f0eb" }}>
+
       {/* TOP BAR */}
       <SessionTopBar
         sessionId={id}
         sessionTitle={session?.title || "Loading..."}
         inviteCode={(session as any)?.invite_code}
-        onToggleAi={() => { setRightPanel("ai"); setIsRightPanelOpen(true); }}
-        onToggleVoice={() => { setRightPanel("transcript"); setIsRightPanelOpen(true); }}
-        isVoiceActive={rightPanel === "transcript" && isRightPanelOpen}
-        isAiOpen={rightPanel === "ai" && isRightPanelOpen}
+        onToggleAi={() => togglePanel("ai")}
+        onToggleVoice={() => togglePanel("transcript")}
+        isVoiceActive={activePanel === "transcript"}
+        isAiOpen={activePanel === "ai"}
       />
 
-      {/* MAIN WORKSPACE */}
-      <div className="flex-1 flex pt-14 overflow-hidden">
+      {/* MAIN WORKSPACE (below topbar) */}
+      <div className="flex-1 relative pt-14 overflow-hidden">
 
-        {/* ===== LEFT SIDEBAR: Idea List ===== */}
-        <aside className="w-[280px] shrink-0 bg-bg-surface border-r border-border-subtle flex flex-col overflow-hidden z-10 shadow-[4px_0_24px_rgba(0,0,0,0.2)]">
-          <div className="px-4 py-3 border-b border-border-subtle flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">Ideas ({filteredIdeas.length})</span>
-            </div>
-            {/* Search Bar */}
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-disabled" />
-              <input
-                type="text"
-                placeholder="Search ideas..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className="w-full bg-bg-base border border-border-subtle rounded-lg pl-8 pr-3 py-1.5 text-xs text-text-primary outline-none focus:border-indigo-500/50 transition-colors placeholder:text-text-disabled"
-              />
-            </div>
-            {/* Filters */}
-            <div className="flex gap-1.5 overflow-x-auto custom-scrollbar pb-1">
-              <button
-                onClick={() => setSelectedCategory(null)}
-                className={`px-2.5 py-1 rounded-md text-[10px] whitespace-nowrap transition-colors font-medium border ${!selectedCategory ? 'bg-bg-elevated text-text-primary border-border-strong' : 'bg-bg-base text-text-secondary border-border-subtle hover:border-border-default'}`}
-              >
-                All
-              </button>
-              {categories.map(c => (
-                <button
-                  key={c.id}
-                  onClick={() => setSelectedCategory(selectedCategory === c.id ? null : c.id)}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] whitespace-nowrap transition-colors font-medium border ${selectedCategory === c.id ? 'bg-bg-elevated border-border-strong text-text-primary' : 'bg-bg-base text-text-secondary border-border-subtle hover:border-border-default'}`}
-                >
-                  <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: c.color }} />
-                  {c.name}
-                </button>
-              ))}
+        {/* FULL-SCREEN CANVAS */}
+        {isIdeasLoading ? (
+          <div className="h-full flex items-center justify-center">
+            <div className="flex flex-col items-center gap-3">
+              <Loader2 className="w-8 h-8 animate-spin text-amber-700/50" />
+              <p className="text-amber-900/50 text-sm">Loading your whiteboard...</p>
             </div>
           </div>
+        ) : (
+          <IdeaCanvas
+            ref={canvasRef}
+            ideas={ideaNodes}
+            clusters={clusters}
+            isAnalyzing={isAnalyzing}
+            onAddIdea={() => setIsCreateModalOpen(true)}
+            onPositionChange={handlePositionChange}
+          />
+        )}
 
-          <div className="flex-1 overflow-y-auto py-2 px-2 custom-scrollbar">
-            {isIdeasLoading ? (
-              <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-indigo-400" /></div>
-            ) : filteredIdeas.length === 0 ? (
-              <div className="text-center py-8 text-text-disabled text-xs">No ideas found</div>
-            ) : (
-              <div className="flex flex-col gap-1">
-                {filteredIdeas.map((idea: any, i: number) => (
-                  <motion.button
-                    key={idea.id}
-                    onClick={() => handlePanToIdea(idea.id)}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.03 }}
-                    className="w-full text-left px-3 py-2.5 rounded-lg border border-transparent hover:bg-bg-hover hover:border-border-subtle transition-all group"
-                  >
-                    <div className="flex items-start gap-2.5">
-                      <div
-                        className="w-2 h-2 rounded-full mt-1 shrink-0"
-                        style={{ backgroundColor: `var(--cat-${(idea.category || "other").toLowerCase()})` }}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <span className="text-[12px] font-medium text-text-secondary group-hover:text-text-primary transition-colors leading-snug line-clamp-2 mb-1 block">
-                          {idea.title}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          {idea.is_ai_generated && (
-                            <span className="text-[9px] font-semibold text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                              <Sparkles className="w-2.5 h-2.5" /> AI
-                            </span>
-                          )}
-                          {(idea.votes_count ?? 0) > 0 && (
-                            <span className="text-[10px] font-medium text-text-tertiary flex items-center gap-1"><TrendingUp className="w-3 h-3" /> {idea.votes_count}</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </motion.button>
-                ))}
-              </div>
-            )}
-          </div>
-        </aside>
+        {/* FLOATING ADD BUTTON REMOVED (Moved to Bottom Dock) */}
 
-        {/* ===== CENTER: CANVAS ===== */}
-        <main className="flex-1 overflow-hidden relative">
-          {isIdeasLoading ? (
-            <div className="h-full flex items-center justify-center">
-              <Loader2 className="w-8 h-8 animate-spin text-indigo-400" />
-            </div>
-          ) : (
-            <IdeaCanvas
-              ref={canvasRef}
-              ideas={ideaNodes}
-              onAddIdea={() => setIsCreateModalOpen(true)}
-              onPositionChange={handlePositionChange}
-            />
-          )}
-
-          {/* Floating Add Button */}
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setIsCreateModalOpen(true)}
-            className="absolute top-4 left-4 z-20 flex items-center gap-2 px-4 py-2 bg-indigo-500 text-white rounded-xl text-sm font-semibold shadow-glow-indigo hover:bg-indigo-600 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Add Idea
-          </motion.button>
-        </main>
-
-        {/* ===== RIGHT PANEL ===== */}
+        {/* SLIDING BOTTOM PANEL */}
         <AnimatePresence>
-          {isRightPanelOpen && (
-            <motion.aside
-              initial={{ width: 0, opacity: 0 }}
-              animate={{ width: 300, opacity: 1 }}
-              exit={{ width: 0, opacity: 0 }}
+          {activePanel && (
+            <motion.div
+              initial={{ y: "100%", opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: "100%", opacity: 0 }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="shrink-0 bg-bg-surface border-l border-border-subtle flex flex-col overflow-hidden"
+              className="absolute bottom-16 left-0 right-0 z-30 mx-4 mb-2 rounded-2xl overflow-hidden shadow-2xl"
+              style={{ maxHeight: panelHeight, backgroundColor: "rgba(255,252,248,0.97)", border: "1px solid rgba(120,100,80,0.12)" }}
             >
-              {/* Panel Tab Bar */}
-              <div className="flex border-b border-border-subtle shrink-0">
-                {[
-                  { id: "chat", label: "Chat", icon: MessageCircle },
-                  { id: "ai", label: "AI", icon: Sparkles },
-                  { id: "analytics", label: "Analytics", icon: Brain },
-                  { id: "transcript", label: "Transcript", icon: Mic },
-                ].map((tab: any) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setRightPanel(tab.id as RightPanelTab)}
-                    className={cn(
-                      "flex-1 py-2.5 flex items-center justify-center gap-1.5 text-xs font-semibold transition-all border-b-2",
-                      rightPanel === tab.id
-                        ? "border-indigo-500 text-indigo-400"
-                        : "border-transparent text-text-tertiary hover:text-text-primary"
-                    )}
-                  >
-                    <tab.icon className="w-3.5 h-3.5" />
-                  </button>
-                ))}
-                <button
-                  onClick={() => setIsRightPanelOpen(false)}
-                  className="px-3 py-2.5 text-text-disabled hover:text-text-primary transition-colors text-xs border-b-2 border-transparent"
-                  title="Close panel"
-                >✕</button>
+              {/* Panel header */}
+              <div className="flex items-center justify-between px-5 py-3 border-b border-border-default">
+                <span className="text-sm font-semibold text-text-primary capitalize">
+                  {activePanel === "ideas" ? `Ideas (${filteredIdeas.length})` :
+                   activePanel === "voting" ? `Voting Leaderboard` :
+                   activePanel === "chat" ? "Session Chat" :
+                   activePanel === "ai" ? "AI Assistant" :
+                   activePanel === "analytics" ? "Analytics" : "Voice Transcript"}
+                </span>
+                <button onClick={() => setActivePanel(null)} className="text-text-tertiary hover:text-text-primary transition-colors p-1 rounded-lg hover:bg-bg-hover">
+                  <X className="w-4 h-4" />
+                </button>
               </div>
 
-              {/* Panel Content */}
-              <div className="flex-1 overflow-hidden">
+              {/* Panel content */}
+              <div className="overflow-auto" style={{ height: `calc(${panelHeight} - 52px)` }}>
                 <AnimatePresence mode="wait">
-                  {rightPanel === "chat" && (
+                  {activePanel === "ideas" && (
+                    <motion.div key="ideas" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-4">
+                      {/* Category filters */}
+                      <div className="flex gap-2 mb-4 flex-wrap">
+                        {/* Search */}
+                        <div className="relative flex-1 min-w-[180px]">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-disabled" />
+                          <input
+                            type="text"
+                            placeholder="Search ideas..."
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                            className="w-full bg-bg-elevated border border-border-default rounded-xl pl-9 pr-3 py-2 text-sm text-text-primary outline-none focus:border-indigo-500/50 placeholder:text-text-disabled transition-colors"
+                          />
+                        </div>
+                        {[{ id: null, name: "All" }, ...categories].map((c: any) => (
+                          <button
+                            key={c.id ?? "all"}
+                            onClick={() => setSelectedCategory(selectedCategory === c.id ? null : c.id)}
+                            className={cn(
+                              "px-3 py-1.5 rounded-xl text-xs font-medium border transition-all",
+                              selectedCategory === c.id || (!selectedCategory && !c.id)
+                                ? "bg-indigo-500/15 border-indigo-500/40 text-indigo-600"
+                                : "bg-bg-elevated border-border-default text-text-tertiary hover:border-border-strong"
+                            )}
+                          >
+                            {c.name}
+                          </button>
+                        ))}
+                      </div>
+                      {/* Ideas grid */}
+                      {filteredIdeas.length === 0 ? (
+                        <div className="text-center py-8 text-text-disabled text-sm">No ideas found</div>
+                      ) : (
+                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+                          {filteredIdeas.map((idea: any, i: number) => (
+                            <motion.button
+                              key={idea.id}
+                              onClick={() => handlePanToIdea(idea.id)}
+                              initial={{ opacity: 0, y: 8 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: i * 0.02 }}
+                              className="text-left p-3 rounded-xl border border-border-default bg-bg-elevated hover:bg-bg-hover hover:border-indigo-500/30 transition-all group"
+                            >
+                              <div className="flex items-center gap-2 mb-1">
+                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: categories.find(c => c.id === idea.category)?.color || "#8b5cf6" }} />
+                                <span className="text-[10px] text-text-tertiary font-medium uppercase tracking-wide truncate">{idea.category || "Other"}</span>
+                              </div>
+                              <div className="text-xs font-semibold text-text-primary group-hover:text-indigo-600 transition-colors line-clamp-2">{idea.title}</div>
+                              {(idea.votes_count ?? 0) > 0 && (
+                                <div className="flex items-center gap-1 mt-2 text-green-400 text-[10px] font-medium">
+                                  <ChevronUp className="w-3 h-3" />{idea.votes_count}
+                                </div>
+                              )}
+                            </motion.button>
+                          ))}
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+                  {activePanel === "voting" && (
+                    <motion.div key="voting" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-4">
+                      {votedIdeas.length === 0 ? (
+                        <div className="text-center py-8 text-text-disabled text-sm">No votes yet. Vote on ideas to see the leaderboard!</div>
+                      ) : (
+                        <div className="flex flex-col gap-2">
+                          {votedIdeas.map((idea: any, i: number) => {
+                            const catColor = categories.find(c => c.id === idea.category)?.color || "#8b5cf6";
+                            const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : null;
+                            return (
+                              <motion.button
+                                key={idea.id}
+                                onClick={() => handlePanToIdea(idea.id)}
+                                initial={{ opacity: 0, x: -12 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: i * 0.04 }}
+                                className={cn(
+                                  "flex items-center gap-3 p-3 rounded-xl border transition-all group text-left w-full",
+                                  i === 0
+                                    ? "bg-amber-50 border-amber-300 hover:bg-amber-100"
+                                    : "bg-bg-elevated border-border-default hover:bg-bg-hover hover:border-indigo-500/30"
+                                )}
+                              >
+                                {/* Rank */}
+                                <div className={cn(
+                                  "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-sm font-bold",
+                                  i === 0 ? "bg-amber-100 text-amber-700" :
+                                  i === 1 ? "bg-gray-100 text-gray-600" :
+                                  i === 2 ? "bg-orange-100 text-orange-600" :
+                                  "bg-bg-hover text-text-tertiary"
+                                )}>
+                                  {medal || `#${i + 1}`}
+                                </div>
+                                
+                                {/* Idea Info */}
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-0.5">
+                                    <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: catColor }} />
+                                    <span className="text-[10px] text-text-tertiary font-medium uppercase tracking-wide">{idea.category || "Other"}</span>
+                                  </div>
+                                  <p className="text-sm font-semibold text-text-primary group-hover:text-indigo-600 transition-colors truncate">{idea.title}</p>
+                                  {idea.author?.name && (
+                                    <p className="text-[11px] text-text-tertiary mt-0.5">by {idea.author.name}</p>
+                                  )}
+                                </div>
+
+                                {/* Vote Count */}
+                                <div className={cn(
+                                  "flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold shrink-0",
+                                  i === 0 ? "bg-amber-100 text-amber-700" : "bg-green-50 text-green-600"
+                                )}>
+                                  <ChevronUp className="w-3.5 h-3.5" />
+                                  {idea.votes_count}
+                                </div>
+                              </motion.button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+                  {activePanel === "chat" && (
                     <motion.div key="chat" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full">
                       <ChatPanel sessionId={id} />
                     </motion.div>
                   )}
-                  {rightPanel === "ai" && (
-                    <motion.div key="ai" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full overflow-auto">
-                      <AIAssistantPanel isOpen={true} onClose={() => setRightPanel("chat")} />
+                  {activePanel === "ai" && (
+                    <motion.div key="ai" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full flex flex-col">
+                      <InlineAIChat />
                     </motion.div>
                   )}
-                  {rightPanel === "analytics" && (
-                    <motion.div key="analytics" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full">
+                  {activePanel === "analytics" && (
+                    <motion.div key="analytics" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full overflow-auto">
                       <AIAnalyticsPanel ideas={analyticsIdeas} sessionTitle={session?.title || "Brainstorming Session"} onMergeIdeas={handleMergeIdeas} />
                     </motion.div>
                   )}
-                  {rightPanel === "transcript" && (
+                  {activePanel === "transcript" && (
                     <motion.div key="transcript" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full">
                       <VoiceTranscriptTab sessionId={id} />
                     </motion.div>
                   )}
                 </AnimatePresence>
               </div>
-            </motion.aside>
+            </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Re-open panel button when closed */}
-        {!isRightPanelOpen && (
-          <motion.button
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            onClick={() => setIsRightPanelOpen(true)}
-            className="absolute right-4 top-1/2 -translate-y-1/2 z-30 w-8 h-16 bg-bg-elevated border border-border-default rounded-lg flex items-center justify-center text-text-tertiary hover:text-text-primary hover:border-indigo-500/40 transition-colors shadow-lg"
+        {/* BOTTOM TOOLBAR */}
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-40">
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.3, type: "spring", damping: 20 }}
+            className="flex items-center gap-1 p-1.5 rounded-2xl shadow-lg border border-border-default pointer-events-auto"
+            style={{ backgroundColor: "rgba(255,252,248,0.95)", backdropFilter: "blur(20px)" }}
           >
-            <LayoutGrid className="w-4 h-4" />
-          </motion.button>
-        )}
+            {/* Primary Add Note Action */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setIsCreateModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 mr-1 bg-indigo-500 text-white rounded-xl text-sm font-semibold shadow-lg shadow-indigo-500/20 hover:bg-indigo-600 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:block">Add Note</span>
+            </motion.button>
+            
+            <div className="w-px h-6 bg-border-default mx-1" />
+
+            {bottomTabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activePanel === tab.id;
+              
+              return (
+                <motion.button
+                  key={tab.id}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => togglePanel(tab.id)}
+                  className={cn(
+                    "relative flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all",
+                    isActive
+                      ? "bg-indigo-500/12 text-indigo-600 border border-indigo-500/30"
+                      : "text-text-secondary hover:text-text-primary hover:bg-bg-hover"
+                  )}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span className="hidden sm:block">{tab.label}</span>
+                  {tab.id === "ideas" && ideas.length > 0 && (
+                    <span className="ml-1 w-5 h-5 flex items-center justify-center rounded-full bg-indigo-500/15 text-indigo-600 text-[10px] font-bold">
+                      {ideas.length}
+                    </span>
+                  )}
+                  {isActive && (
+                    <motion.div
+                      layoutId="activeTabIndicator"
+                      className="absolute inset-0 border border-indigo-500/40 rounded-xl"
+                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                      style={{ zIndex: -1 }}
+                    />
+                  )}
+                </motion.button>
+              );
+            })}
+          </motion.div>
+        </div>
       </div>
 
       {/* ===== MODALS ===== */}
@@ -391,6 +564,7 @@ export default function SessionBoardPage({ params }: { params: Promise<{ id: str
         isOpen={!!activeEvaluateIdea}
         ideaId={activeEvaluateIdea?.id || ""}
         ideaTitle={activeEvaluateIdea?.title || ""}
+        ideaDescription={activeEvaluateIdea?.description || ""}
         currentScores={activeEvaluateIdea?.scores}
         onClose={() => setActiveEvaluateIdea(null)}
       />
@@ -400,8 +574,6 @@ export default function SessionBoardPage({ params }: { params: Promise<{ id: str
         ideaTitle={activeTimelineIdea?.title || ""}
         onClose={() => setActiveTimelineIdea(null)}
       />
-
-      <style dangerouslySetInnerHTML={{__html: `.custom-scrollbar::-webkit-scrollbar{width:4px}.custom-scrollbar::-webkit-scrollbar-thumb{background:rgba(99,102,241,0.2);border-radius:4px}`}} />
     </div>
   );
 }

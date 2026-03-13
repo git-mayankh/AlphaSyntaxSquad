@@ -7,19 +7,31 @@ import { Input } from "@/components/ui/Input";
 import { useRouter } from "next/navigation";
 import { createSupabaseClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
+import { useOrganizations } from "@/hooks/useOrganizations";
 
 export interface CreateSessionModalProps {
   isOpen: boolean;
   onClose: () => void;
+  defaultOrgId?: string | null;
 }
 
-export const CreateSessionModal = ({ isOpen, onClose }: CreateSessionModalProps) => {
+export const CreateSessionModal = ({ isOpen, onClose, defaultOrgId }: CreateSessionModalProps) => {
   const router = useRouter();
   const supabase = createSupabaseClient();
   const [loading, setLoading] = useState(false);
   const [title, setTitle] = useState("");
   const [problemStatement, setProblemStatement] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Product");
+  
+  const { data: orgs } = useOrganizations();
+  const [selectedOrgId, setSelectedOrgId] = useState<string>(defaultOrgId || "");
+
+  // Auto-select first org if no default is provided
+  React.useEffect(() => {
+    if (!selectedOrgId && orgs && orgs.length > 0) {
+      setSelectedOrgId(orgs[0].id);
+    }
+  }, [orgs, selectedOrgId]);
 
   const categories = [
     { id: "Product", color: "var(--cat-product)" },
@@ -37,6 +49,10 @@ export const CreateSessionModal = ({ isOpen, onClose }: CreateSessionModalProps)
     e.preventDefault();
     if (!title.trim()) {
       toast.error("Please enter a session title");
+      return;
+    }
+    if (!selectedOrgId) {
+      toast.error("Please select an organization for this session");
       return;
     }
 
@@ -58,6 +74,7 @@ export const CreateSessionModal = ({ isOpen, onClose }: CreateSessionModalProps)
           status: "active",
           invite_code: generateInviteCode(),
           created_by: user.id,
+          organization_id: selectedOrgId,
         })
         .select()
         .single();
@@ -100,6 +117,23 @@ export const CreateSessionModal = ({ isOpen, onClose }: CreateSessionModalProps)
             onChange={(e) => setProblemStatement(e.target.value)}
             className="w-full bg-bg-surface border border-border-default rounded-md text-text-primary px-4 py-3 placeholder:text-text-disabled outline-none transition-all duration-150 ease-out resize-none focus:border-border-accent focus:shadow-[0_0_0_3px_rgba(99,102,241,0.15)]"
           />
+        </div>
+
+        <div className="w-full flex flex-col gap-1.5 text-left">
+          <label className="text-[13px] text-text-tertiary font-medium px-1">
+            Organization *
+          </label>
+          <div className="relative">
+            <select 
+              value={selectedOrgId}
+              onChange={(e) => setSelectedOrgId(e.target.value)}
+              required
+              className="w-full bg-bg-surface border border-border-default rounded-md text-text-primary px-4 py-3 appearance-none outline-none focus:border-border-accent focus:shadow-[0_0_0_3px_rgba(99,102,241,0.15)] bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M6%209L12%2015L18%209%22%20stroke%3D%22%239090B0%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-[length:20px_20px] bg-[position:calc(100%-12px)_center] bg-no-repeat"
+            >
+              <option value="" disabled>Select an Organization</option>
+              {orgs?.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+            </select>
+          </div>
         </div>
 
         <div className="w-full flex flex-col gap-1.5 text-left">

@@ -11,6 +11,7 @@ import Placeholder from '@tiptap/extension-placeholder';
 import { IdeaCard } from "./IdeaCard";
 import { createSupabaseClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 export interface CreateIdeaModalProps {
   isOpen: boolean;
@@ -36,6 +37,7 @@ export const CreateIdeaModal = ({ isOpen, onClose, sessionId }: CreateIdeaModalP
   const [isAiImproving, setIsAiImproving] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const supabase = createSupabaseClient();
+  const queryClient = useQueryClient();
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -97,13 +99,14 @@ export const CreateIdeaModal = ({ isOpen, onClose, sessionId }: CreateIdeaModalP
     setIsSubmitting(true);
     
     try {
-      const { data: userData, error: userError } = await supabase.auth.getUser();
-      if (userError || !userData?.user) {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData?.user) {
         toast.error("Please sign in to add ideas.");
+        setIsSubmitting(false);
         return;
       }
 
-      const newIdea = {
+      const { data: newIdeaData, error } = await supabase.from('ideas').insert({
         session_id: sessionId,
         title: title,
         description: editor.getHTML(),
@@ -111,36 +114,35 @@ export const CreateIdeaModal = ({ isOpen, onClose, sessionId }: CreateIdeaModalP
         status: 'open',
         author_id: userData.user.id,
         is_ai_generated: false
-      };
-
-      const { data: newIdeaData, error } = await supabase.from('ideas').insert(newIdea).select().single();
+      }).select().single();
+      
       if (error) throw error;
 
-      // Log creation in history
-      await supabase.from('idea_history').insert({
-        idea_id: newIdeaData.id,
-        action_type: 'created',
-        description: `Idea initially proposed by ${userData.user.user_metadata?.full_name || 'User'}`
-      });
+      // Fire-and-forget history log
+      void (async () => {
+        try {
+          await supabase.from('idea_history').insert({
+            idea_id: newIdeaData.id,
+            action_type: 'created',
+            description: `Idea proposed by ${userData.user.user_metadata?.full_name || 'User'}`
+          });
+        } catch { /* ignore */ }
+      })();
 
-      // If AI improved, log that too immediately
-      if (isAiImproving) { /* Although usually they toggle it, here we know it was improved if they kept the AI tag or something. Let's trace it simply */ }
-
-      toast.success("Idea added successfully!");
+      // Reset form state FIRST, then close & show toast
+      queryClient.invalidateQueries({ queryKey: ["ideas", sessionId] });
+      setIsSubmitting(false);
+      setStep(1);
+      setTitle("");
+      editor.commands.clearContent();
+      setTags([]);
       onClose();
-      
-      // Add a small delay before resetting state to allow exit animation to begin
-      setTimeout(() => {
-        setStep(1);
-        setTitle("");
-        editor.commands.clearContent();
-        setTags([]);
-      }, 500);
+      toast.success("Idea added successfully! 🚀");
 
     } catch (err: any) {
-      toast.error(err.message || "Failed to add idea");
-      console.error(err);
-    } finally {
+      const msg = (err as any)?.message || "Failed to add idea. Try again.";
+      toast.error(msg);
+      console.error("CreateIdea error:", err);
       setIsSubmitting(false);
     }
   };
@@ -206,11 +208,11 @@ export const CreateIdeaModal = ({ isOpen, onClose, sessionId }: CreateIdeaModalP
               <div className="flex-1 bg-bg-surface border border-border-default rounded-2xl overflow-hidden flex flex-col shadow-[var(--shadow-card)]">
                 {/* TIPTAP TOOLBAR */}
                 <div className="flex items-center gap-1 p-2 border-b border-border-default bg-bg-elevated">
-                  <button onClick={() => editor?.chain().focus().toggleBold().run()} className={cn("p-2 rounded hover:bg-bg-hover transition-colors", editor?.isActive('bold') && 'bg-bg-hover text-white')}><Bold className="w-4 h-4" /></button>
-                  <button onClick={() => editor?.chain().focus().toggleItalic().run()} className={cn("p-2 rounded hover:bg-bg-hover transition-colors", editor?.isActive('italic') && 'bg-bg-hover text-white')}><Italic className="w-4 h-4" /></button>
+                  <button onClick={() => editor?.chain().focus().toggleBold().run()} className={cn("p-2 rounded hover:bg-bg-hover transition-colors", editor?.isActive('bold') && 'bg-bg-hover text-indigo-600')}><Bold className="w-4 h-4" /></button>
+                  <button onClick={() => editor?.chain().focus().toggleItalic().run()} className={cn("p-2 rounded hover:bg-bg-hover transition-colors", editor?.isActive('italic') && 'bg-bg-hover text-indigo-600')}><Italic className="w-4 h-4" /></button>
                   <div className="w-px h-4 bg-border-strong mx-1" />
-                  <button onClick={() => editor?.chain().focus().toggleBulletList().run()} className={cn("p-2 rounded hover:bg-bg-hover transition-colors", editor?.isActive('bulletList') && 'bg-bg-hover text-white')}><List className="w-4 h-4" /></button>
-                  <button onClick={() => editor?.chain().focus().toggleOrderedList().run()} className={cn("p-2 rounded hover:bg-bg-hover transition-colors", editor?.isActive('orderedList') && 'bg-bg-hover text-white')}><ListOrdered className="w-4 h-4" /></button>
+                  <button onClick={() => editor?.chain().focus().toggleBulletList().run()} className={cn("p-2 rounded hover:bg-bg-hover transition-colors", editor?.isActive('bulletList') && 'bg-bg-hover text-indigo-600')}><List className="w-4 h-4" /></button>
+                  <button onClick={() => editor?.chain().focus().toggleOrderedList().run()} className={cn("p-2 rounded hover:bg-bg-hover transition-colors", editor?.isActive('orderedList') && 'bg-bg-hover text-indigo-600')}><ListOrdered className="w-4 h-4" /></button>
                 </div>
                 
                 {/* EDITOR CONTENT */}

@@ -27,10 +27,9 @@ export function useIdeas(sessionId: string) {
         .select(`
           *,
           author:profiles!ideas_author_id_fkey(name, avatar_url),
-          votes:idea_votes(count),
-          comments:idea_comments(count),
-          reactions:idea_reactions(count),
-          user_reaction:idea_reactions(emoji),
+          idea_votes(user_id),
+          idea_comments(id),
+          idea_reactions(id, emoji, user_id),
           positions:idea_positions(x, y)
         `)
         .eq("session_id", sessionId);
@@ -39,17 +38,21 @@ export function useIdeas(sessionId: string) {
       
       // format votes count, positions, and author correctly from join
       return data.map((idea: any) => {
+        const votesArr = idea.idea_votes || [];
+        const commentsArr = idea.idea_comments || [];
+        const reactionsArr = idea.idea_reactions || [];
+
         // Find if current user reacted
-        const userReaction = userId && idea.user_reaction 
-          ? idea.user_reaction.find((r: any) => r.user_id === userId)?.emoji || null 
+        const userReaction = userId
+          ? reactionsArr.find((r: any) => r.user_id === userId)?.emoji || null
           : null;
 
         return {
           ...idea,
-          votes_count: idea.votes?.[0]?.count || 0,
-          comments_count: idea.comments?.[0]?.count || 0,
-          reactions_count: idea.reactions?.[0]?.count || 0,
-          user_reaction_emoji: idea.user_reaction?.[0]?.emoji || null,
+          votes_count: votesArr.length,
+          comments_count: commentsArr.length,
+          reactions_count: reactionsArr.length,
+          user_reaction_emoji: userReaction,
           author: Array.isArray(idea.author) ? idea.author[0] : idea.author,
           position: Array.isArray(idea.positions) ? idea.positions[0] : idea.positions
         };

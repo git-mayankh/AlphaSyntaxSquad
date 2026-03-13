@@ -36,10 +36,10 @@ export default function LandingPage() {
       >
         <div className="flex items-center gap-2">
           <Zap className="w-5 h-5 text-amber-400 fill-amber-400" />
-          <span className="font-display font-bold text-lg text-white">IdeaForge</span>
+          <span className="font-display font-bold text-lg text-text-primary">IdeaForge</span>
         </div>
         <div className="flex items-center gap-4">
-          <Link href="/auth" className="text-sm font-medium text-text-secondary hover:text-white transition-colors hidden sm:block">
+          <Link href="/auth" className="text-sm font-medium text-text-secondary hover:text-text-primary transition-colors hidden sm:block">
             Sign In
           </Link>
           <Link href="/auth">
@@ -70,7 +70,7 @@ export default function LandingPage() {
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.1, duration: 0.5 }}
-            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 text-[13px] tracking-[0.08em] uppercase font-medium mb-8"
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-600 text-[13px] tracking-[0.08em] uppercase font-medium mb-8"
           >
             ✦ Real-time Collaboration + AI
           </motion.div>
@@ -81,8 +81,8 @@ export default function LandingPage() {
             transition={{ delay: 0.2, duration: 0.6 }}
             className="font-display font-bold text-[48px] sm:text-[72px] leading-[1.1] tracking-tight mb-6"
           >
-            <span className="text-white block">Where Ideas</span>
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400 block pb-2">Come Alive</span>
+            <span className="text-text-primary block">Where Ideas</span>
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-cyan-500 block pb-2">Come Alive</span>
           </motion.h1>
 
           <motion.p 
@@ -200,9 +200,9 @@ export default function LandingPage() {
             className="glass-card rounded-2xl p-8 hover:-translate-y-2 hover:border-indigo-500/50 hover:shadow-[0_0_40px_rgba(99,102,241,0.15)] transition-all duration-300"
           >
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500/20 to-indigo-500/5 flex items-center justify-center mb-6 border border-indigo-500/20">
-              <Zap className="w-6 h-6 text-indigo-400" />
+              <Zap className="w-6 h-6 text-indigo-500" />
             </div>
-            <h3 className="font-display text-xl font-bold text-white mb-4">Real-Time Ideas</h3>
+            <h3 className="font-display text-xl font-bold text-text-primary mb-4">Real-Time Ideas</h3>
             <p className="text-text-secondary text-[15px] leading-relaxed">
               Experience zero-latency brainstorming. See cursors dance, ideas pop up instantly, and votes tally live as your team collaborates.
             </p>
@@ -216,9 +216,9 @@ export default function LandingPage() {
             className="glass-card rounded-2xl p-8 hover:-translate-y-2 hover:border-cyan-500/50 hover:shadow-[0_0_40px_rgba(34,211,238,0.15)] transition-all duration-300"
           >
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-500/5 flex items-center justify-center mb-6 border border-cyan-500/20">
-              <Sparkles className="w-6 h-6 text-cyan-400" />
+              <Sparkles className="w-6 h-6 text-cyan-500" />
             </div>
-            <h3 className="font-display text-xl font-bold text-white mb-4">AI Co-Pilot</h3>
+            <h3 className="font-display text-xl font-bold text-text-primary mb-4">AI Co-Pilot</h3>
             <p className="text-text-secondary text-[15px] leading-relaxed">
               Stuck? Our AI assistant can generate novel directions, improve existing ideas, or synthesize an executive summary of the session.
             </p>
@@ -232,9 +232,9 @@ export default function LandingPage() {
             className="glass-card rounded-2xl p-8 hover:-translate-y-2 hover:border-green-500/50 hover:shadow-[0_0_40px_rgba(74,222,128,0.15)] transition-all duration-300"
           >
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500/20 to-green-500/5 flex items-center justify-center mb-6 border border-green-500/20">
-              <BarChart2 className="w-6 h-6 text-green-400" />
+              <BarChart2 className="w-6 h-6 text-green-500" />
             </div>
-            <h3 className="font-display text-xl font-bold text-white mb-4">Smart Voting</h3>
+            <h3 className="font-display text-xl font-bold text-text-primary mb-4">Smart Voting</h3>
             <p className="text-text-secondary text-[15px] leading-relaxed">
               Surface the best ideas democratically. Use limited voting tokens, filter by categories, and see the winning ideas automatically rise to the top.
             </p>
@@ -250,20 +250,20 @@ export default function LandingPage() {
             <div className="hidden md:block absolute top-[28px] left-[15%] right-[15%] h-[2px] border-t-2 border-dashed border-border-strong -z-10" />
             
             <div className="flex flex-col items-center text-center max-w-[260px]">
-              <div className="w-14 h-14 rounded-full bg-indigo-500/20 border border-indigo-500/40 text-indigo-400 flex items-center justify-center font-display font-bold text-xl mb-6 shadow-glow-indigo">1</div>
-              <h4 className="font-display text-lg font-semibold text-white mb-3">Create a Session</h4>
+              <div className="w-14 h-14 rounded-full bg-indigo-500/20 border border-indigo-500/40 text-indigo-600 flex items-center justify-center font-display font-bold text-xl mb-6 shadow-glow-indigo">1</div>
+              <h4 className="font-display text-lg font-semibold text-text-primary mb-3">Create a Session</h4>
               <p className="text-text-secondary text-[14px]">Define the problem and invite your team with a simple link.</p>
             </div>
 
             <div className="flex flex-col items-center text-center max-w-[260px]">
-              <div className="w-14 h-14 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center font-display font-bold text-xl mb-6">2</div>
-              <h4 className="font-display text-lg font-semibold text-white mb-3">Brainstorm Freely</h4>
+              <div className="w-14 h-14 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 flex items-center justify-center font-display font-bold text-xl mb-6">2</div>
+              <h4 className="font-display text-lg font-semibold text-text-primary mb-3">Brainstorm Freely</h4>
               <p className="text-text-secondary text-[14px]">Everyone drops their ideas onto the board in real-time.</p>
             </div>
 
             <div className="flex flex-col items-center text-center max-w-[260px]">
-              <div className="w-14 h-14 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center font-display font-bold text-xl mb-6">3</div>
-              <h4 className="font-display text-lg font-semibold text-white mb-3">Vote & Decide</h4>
+              <div className="w-14 h-14 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 flex items-center justify-center font-display font-bold text-xl mb-6">3</div>
+              <h4 className="font-display text-lg font-semibold text-text-primary mb-3">Vote & Decide</h4>
               <p className="text-text-secondary text-[14px]">The best ideas bubble up. Export the winners and build them.</p>
             </div>
           </div>
@@ -272,7 +272,7 @@ export default function LandingPage() {
 
       {/* --- FINAL CTA --- */}
       <section className="w-full bg-[linear-gradient(135deg,rgba(99,102,241,0.10),rgba(34,211,238,0.05))] border-y border-border-subtle py-32 px-6 text-center">
-        <h2 className="font-display font-bold text-[40px] text-white mb-6">Ready to spark brilliance?</h2>
+        <h2 className="font-display font-bold text-[40px] text-text-primary mb-6">Ready to spark brilliance?</h2>
         <p className="text-text-secondary text-lg mb-10 max-w-[500px] mx-auto">
           Join thousands of teams who have already transformed the way they ideate, collaborate, and execute.
         </p>
@@ -291,14 +291,14 @@ export default function LandingPage() {
       <footer className="w-full bg-bg-surface py-12 px-6 border-t border-border-subtle">
         <div className="max-w-[1100px] mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
-            <Zap className="w-4 h-4 text-indigo-400 fill-indigo-400" />
-            <span className="font-display font-bold text-[15px] text-white">IdeaForge</span>
+            <Zap className="w-4 h-4 text-indigo-500 fill-indigo-500" />
+            <span className="font-display font-bold text-[15px] text-text-primary">IdeaForge</span>
           </div>
           <div className="flex gap-8 text-sm text-text-secondary">
-            <Link href="#" className="hover:text-white transition-colors">Product</Link>
-            <Link href="#" className="hover:text-white transition-colors">Pricing</Link>
-            <Link href="#" className="hover:text-white transition-colors">Templates</Link>
-            <Link href="#" className="hover:text-white transition-colors">Legal</Link>
+            <Link href="#" className="hover:text-text-primary transition-colors">Product</Link>
+            <Link href="#" className="hover:text-text-primary transition-colors">Pricing</Link>
+            <Link href="#" className="hover:text-text-primary transition-colors">Templates</Link>
+            <Link href="#" className="hover:text-text-primary transition-colors">Legal</Link>
           </div>
           <div className="text-[13px] text-text-tertiary">
             © {new Date().getFullYear()} IdeaForge Inc.

@@ -58,10 +58,13 @@ export const AIAnalyticsPanel = ({ ideas, sessionTitle = "Brainstorming Session"
         body: JSON.stringify({ sessionTitle, ideas }),
       });
       const result = await res.json();
+      if (!res.ok) {
+        throw new Error(result.error || "Failed to generate summary");
+      }
       setSessionSummary(result);
       toast.success("Session summary generated!");
-    } catch {
-      toast.error("Failed to generate summary.");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to generate summary.");
     } finally {
       setGeneratingSummary(false);
     }
@@ -368,7 +371,7 @@ export const AIAnalyticsPanel = ({ ideas, sessionTitle = "Brainstorming Session"
                   <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-3">
                     <h4 className="text-[10px] uppercase font-bold text-amber-500/80 tracking-wider mb-2 flex items-center gap-1.5"><Lightbulb className="w-3 h-3"/> Standout Ideas</h4>
                     <ul className="flex flex-col gap-2">
-                      {sessionSummary.topIdeas.map((idea: string, i: number) => (
+                      {sessionSummary.topIdeas?.map((idea: string, i: number) => (
                         <li key={i} className="text-xs text-amber-200/90 leading-snug flex items-start gap-1.5">
                           <CheckCircle2 className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
                           <span>{idea}</span>
@@ -378,7 +381,7 @@ export const AIAnalyticsPanel = ({ ideas, sessionTitle = "Brainstorming Session"
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
-                    {sessionSummary.keyThemes.map((theme: string, i: number) => (
+                    {sessionSummary.keyThemes?.map((theme: string, i: number) => (
                       <div key={i} className="bg-indigo-500/10 border border-indigo-500/20 p-2 rounded-lg text-center">
                         <span className="text-[10px] font-bold text-indigo-300">{theme}</span>
                       </div>
