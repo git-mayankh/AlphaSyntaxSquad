@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { ArrowRight, Lightbulb, Users, ThumbsUp } from "lucide-react";
+import { ArrowRight, Lightbulb, Users, ThumbsUp, Edit2, Trash2 } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import Link from "next/link";
@@ -11,6 +11,7 @@ export interface SessionCardProps {
   title: string;
   description: string;
   status: "active" | "closed";
+  organizationName?: string;
   timeAgo: string;
   tags: string[];
   stats: {
@@ -20,9 +21,16 @@ export interface SessionCardProps {
   };
   members: Array<{ name: string; avatar?: string }>;
   colorIndex: number;
+  createdBy?: string;
+  currentUserId?: string;
+  onEditClick?: () => void;
+  onDeleteClick?: () => void;
 }
 
-export const SessionCard = ({ id, title, description, status, timeAgo, tags, stats, members, colorIndex }: SessionCardProps) => {
+export const SessionCard = ({ 
+  id, title, description, status, organizationName, timeAgo, tags, stats, members, colorIndex, 
+  createdBy, currentUserId, onEditClick, onDeleteClick 
+}: SessionCardProps) => {
   const colors = [
     "bg-indigo-400", "bg-cyan-400", "bg-pink-400", "bg-amber-400", "bg-green-400"
   ];
@@ -36,17 +44,24 @@ export const SessionCard = ({ id, title, description, status, timeAgo, tags, sta
       
       <div className="p-6 flex flex-col flex-1">
         {/* ROW 1 */}
-        <div className="flex items-center gap-3 mb-2">
-          {status === "active" ? (
-            <div className="bg-green-400/10 border border-green-400/20 text-green-400 px-2.5 py-0.5 rounded-full flex items-center gap-1.5 text-xs font-semibold">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-              Active
-            </div>
-          ) : (
-            <div className="bg-bg-elevated border border-border-subtle text-text-tertiary px-2.5 py-0.5 rounded-full text-xs font-semibold">
-              Closed
-            </div>
-          )}
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            {organizationName && (
+              <div className="bg-bg-elevated border border-border-subtle text-text-primary px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider">
+                {organizationName}
+              </div>
+            )}
+            {status === "active" ? (
+              <div className="bg-green-400/10 border border-green-400/20 text-green-400 px-2.5 py-0.5 rounded-full flex items-center gap-1.5 text-xs font-semibold">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                Active
+              </div>
+            ) : (
+              <div className="bg-bg-elevated border border-border-subtle text-text-tertiary px-2.5 py-0.5 rounded-full text-xs font-semibold">
+                Closed
+              </div>
+            )}
+          </div>
           <span className="text-[13px] text-text-tertiary">{timeAgo}</span>
         </div>
         
@@ -94,10 +109,32 @@ export const SessionCard = ({ id, title, description, status, timeAgo, tags, sta
               </div>
             )}
           </div>
-          <Link href={`/session/${id}`} className="text-[14px] text-indigo-400 font-medium flex items-center gap-1 hover:text-indigo-300 transition-colors group-hover:underline decoration-1 underline-offset-4">
-            Open
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </Link>
+          
+          <div className="flex items-center gap-2">
+            {currentUserId === createdBy && currentUserId && (
+              <div className="flex bg-bg-elevated border border-border-subtle rounded-lg opacity-0 group-hover:opacity-100 transition-opacity translate-y-2 group-hover:translate-y-0 duration-300 pointer-events-none group-hover:pointer-events-auto">
+                <button
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); onEditClick?.(); }}
+                  className="p-1.5 text-text-tertiary hover:text-text-primary hover:bg-bg-hover rounded-l-md transition-colors border-r border-border-subtle"
+                  title="Edit Session"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDeleteClick?.(); }}
+                  className="p-1.5 text-text-tertiary hover:text-red-400 hover:bg-red-500/10 rounded-r-md transition-colors"
+                  title="Delete Session"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+            
+            <Link href={`/session/${id}`} className="text-[14px] text-indigo-400 font-medium flex items-center gap-1 hover:text-indigo-300 transition-colors group-hover:underline decoration-1 underline-offset-4 ml-2">
+              Open
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </div>
         </div>
       </div>
     </div>

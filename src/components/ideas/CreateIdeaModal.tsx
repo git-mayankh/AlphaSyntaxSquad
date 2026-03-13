@@ -97,13 +97,14 @@ export const CreateIdeaModal = ({ isOpen, onClose, sessionId }: CreateIdeaModalP
     setIsSubmitting(true);
     
     try {
-      const { data: userData, error: userError } = await supabase.auth.getUser();
-      if (userError || !userData?.user) {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData?.user) {
         toast.error("Please sign in to add ideas.");
+        setIsSubmitting(false);
         return;
       }
 
-      const newIdea = {
+      const { data: newIdeaData, error } = await supabase.from('ideas').insert({
         session_id: sessionId,
         title: title,
         description: editor.getHTML(),
@@ -111,36 +112,34 @@ export const CreateIdeaModal = ({ isOpen, onClose, sessionId }: CreateIdeaModalP
         status: 'open',
         author_id: userData.user.id,
         is_ai_generated: false
-      };
-
-      const { data: newIdeaData, error } = await supabase.from('ideas').insert(newIdea).select().single();
+      }).select().single();
+      
       if (error) throw error;
 
-      // Log creation in history
-      await supabase.from('idea_history').insert({
-        idea_id: newIdeaData.id,
-        action_type: 'created',
-        description: `Idea initially proposed by ${userData.user.user_metadata?.full_name || 'User'}`
-      });
+      // Fire-and-forget history log
+      void (async () => {
+        try {
+          await supabase.from('idea_history').insert({
+            idea_id: newIdeaData.id,
+            action_type: 'created',
+            description: `Idea proposed by ${userData.user.user_metadata?.full_name || 'User'}`
+          });
+        } catch { /* ignore */ }
+      })();
 
-      // If AI improved, log that too immediately
-      if (isAiImproving) { /* Although usually they toggle it, here we know it was improved if they kept the AI tag or something. Let's trace it simply */ }
-
-      toast.success("Idea added successfully!");
+      // Reset form state FIRST, then close & show toast
+      setIsSubmitting(false);
+      setStep(1);
+      setTitle("");
+      editor.commands.clearContent();
+      setTags([]);
       onClose();
-      
-      // Add a small delay before resetting state to allow exit animation to begin
-      setTimeout(() => {
-        setStep(1);
-        setTitle("");
-        editor.commands.clearContent();
-        setTags([]);
-      }, 500);
+      toast.success("Idea added successfully! 🚀");
 
     } catch (err: any) {
-      toast.error(err.message || "Failed to add idea");
-      console.error(err);
-    } finally {
+      const msg = (err as any)?.message || "Failed to add idea. Try again.";
+      toast.error(msg);
+      console.error("CreateIdea error:", err);
       setIsSubmitting(false);
     }
   };

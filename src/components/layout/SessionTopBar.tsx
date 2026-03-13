@@ -107,9 +107,9 @@ export const SessionTopBar = ({
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 h-14 bg-bg-surface/95 backdrop-blur-xl border-b border-border-subtle flex items-center px-5 gap-4">
+    <header className="fixed top-0 left-0 right-0 z-50 h-14 bg-white/90 backdrop-blur-xl border-b border-black/8 flex items-center px-5 gap-4 shadow-sm">
       {/* Logo */}
-      <NextLink href="/dashboard" className="flex items-center gap-2 text-text-tertiary hover:text-text-primary transition-colors">
+      <NextLink href="/dashboard" className="flex items-center gap-2 text-gray-400 hover:text-gray-700 transition-colors">
         <Zap className="w-5 h-5 text-indigo-500 fill-indigo-500" />
       </NextLink>
 
@@ -117,12 +117,12 @@ export const SessionTopBar = ({
 
       {/* Session Title */}
       <div className="flex items-center gap-2">
-        <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-        <h1 className="font-display font-semibold text-text-primary text-[15px] truncate max-w-[180px]">{sessionTitle}</h1>
+        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+        <h1 className="font-display font-semibold text-gray-900 text-[15px] truncate max-w-[200px]">{sessionTitle}</h1>
       </div>
 
       {/* Timer */}
-      <div className="flex items-center gap-1.5 text-text-tertiary bg-bg-base border border-border-subtle rounded-md px-2.5 py-1 font-mono text-xs font-semibold tracking-widest">
+      <div className="flex items-center gap-1.5 text-gray-500 bg-gray-100 border border-gray-200 rounded-md px-2.5 py-1 font-mono text-xs font-semibold tracking-widest">
         <Timer className="w-3 h-3" />
         {formatTime(elapsed)}
       </div>
@@ -200,7 +200,7 @@ export const SessionTopBar = ({
             <Avatar name={p.name} src={p.avatar_url} size="sm" online />
           </div>
         ))}
-        <div className="flex items-center gap-1 text-text-secondary text-xs ml-2">
+        <div className="flex items-center gap-1 text-gray-500 text-xs ml-2">
           <Users className="w-3.5 h-3.5" />
           {participants.length}
         </div>
@@ -214,8 +214,8 @@ export const SessionTopBar = ({
         whileTap={{ scale: 0.95 }}
         className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
           isVoiceActive
-            ? "bg-green-500/15 text-green-400 border border-green-500/40 shadow-[0_0_12px_rgba(74,222,128,0.2)]"
-            : "text-text-secondary hover:text-text-primary hover:bg-bg-hover border border-transparent"
+            ? "bg-green-100 text-green-700 border border-green-300"
+            : "text-gray-500 hover:text-gray-800 hover:bg-gray-100 border border-transparent"
         }`}
       >
         {isVoiceActive ? (
@@ -223,9 +223,9 @@ export const SessionTopBar = ({
             <Mic className="w-4 h-4" />
             <span className="flex gap-0.5 items-center">
               {[0, 1, 2].map(i => (
-                <motion.span key={i} className="block w-0.5 rounded-full bg-green-400"
-                  animate={{ height: ["4px", "10px", "4px"] }}
-                  transition={{ repeat: Infinity, duration: 0.8, delay: i * 0.15 }} />
+                <motion.span key={i} className="block w-0.5 rounded-full bg-green-500"
+                  animate={{ height: ["4px", "12px", "4px"] }}
+                  transition={{ repeat: Infinity, duration: 0.8, delay: i * 0.15, ease: "easeInOut" }} />
               ))}
             </span>
             In Room
@@ -241,8 +241,8 @@ export const SessionTopBar = ({
         whileTap={{ scale: 0.95 }}
         className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
           isAiOpen
-            ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/40"
-            : "bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 border border-indigo-500/20"
+            ? "bg-indigo-100 text-indigo-700 border border-indigo-300"
+            : "bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-200"
         }`}
       >
         <Brain className="w-4 h-4" />
